@@ -8733,6 +8733,11 @@ replayFPS = MO:CreateSlider({
 	Increment = 1;
 	Tip = "Sets the replay playback frame rate."
 })
+-- // Wrapped in a function scope so its locals don't overflow the
+-- // 200 local-register limit of the main chunk (fixes "Out of local
+-- // registers ... exceeded limit 200" so the script can load).
+do
+	local function __ff3_replay()
 if not l then
 	local D = (game:GetService("Players")).LocalPlayer
 	local f = game:GetService("ReplicatedStorage")
@@ -8932,6 +8937,9 @@ if not l then
 			b(...)
 		end
 	end)
+end
+	end
+	__ff3_replay()
 end
 
 -- // Finish load: signal that the FF3 God UI finished initializing.
