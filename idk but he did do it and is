@@ -154,7 +154,7 @@ for D, f in pairs(j["Minimal White"]) do
 	N[D] = f
 end
 local p = "Lyra Team"
-local L = "https://discord.gg/qH3J7t4d"
+local L = "https://discord.gg/dgmwyrS6j"
 local q = {
 	Flags = {},
 	ThemeConnections = {},
@@ -3406,7 +3406,7 @@ function q.CreateWindow(F, D)
 		end
 	})
 	I.Credits:CreateButton({
-		Name = "Discord: discord.gg/qH3J7t4d";
+		Name = "Discord: discord.gg/dgmwyrS6j";
 		Tip = "Lyra Team Discord invite.";
 		Callback = function()
 			q:Notify({
