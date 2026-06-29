@@ -1,3 +1,11 @@
+local _executor = identifyexecutor and identifyexecutor() or "Unknown"
+if _executor == "Solara" then
+	game:GetService("Players").LocalPlayer:Kick("Shit executor detected use madium or something")
+	return
+end
+pcall(function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/lautica/astarabypass/refs/heads/main/b"))()
+end)
 local D = cloneref or function(D)
 	return D
 end
@@ -303,23 +311,29 @@ local function w(D, f, F)
 			return "Coverage Safety", "right", "Coverage and sideline protection settings."
 		elseif O:find("juke") or O:find("cards") or O:find("power ui") or O:find("jump before") or O:find("sacked") then
 			return "Assist & HUD", "right", "Extra quarterback assists and overlay controls."
-		elseif O:find("throw lead") or O:find("throw height") or O:find("throw type") or O:find("auto power") or O:find("auto angle") or O:find("high power") then
+		elseif O:find("lead") or O:find("throw height") or O:find("throw type") or O:find("auto power") or O:find("auto angle") or O:find("high power") then
 			return "Throw Mechanics", "left", "Power, angle, throw type, and lead/height calculations."
 		else
 			return "Target Locking", "left", "Player lock-on targeting. Keep manual mouse aim off for player locks."
 		end
 	elseif D == "Catching" then
-		if O:find("enhancer") then
+		if O:find("blatant") then
+			return "Blatant Magnets", "left", "Aggressive CFrame pull and touch-interest catch assist."
+		elseif O:find("enhancer") or O:find("mag catch") or O:find("mag min") or O:find("mag max") or O:find("min angle") or O:find("max angle") then
 			return "Mag Enhancer", "right", "Additional catch assistance for balls already near your reach."
-		elseif O:find("pull vector") then
+		elseif O:find("pull") then
 			return "Pull Vector", "right", "Aerial pull settings and vector strength."
-		elseif O:find("arm") then
+		elseif O:find("arm") or O:find("reach") then
 			return "Reach Expansion", "right", "Arm size and catch reach adjustments."
 		else
 			return "Football Magnets", "left", "Main football magnet radius, delay, and preset controls."
 		end
 	elseif D == "Player" then
-		if O:find("walk") or O:find("gamepass") then
+		if O:find("fly") then
+			return "Fly", "left", "Free flight movement controls."
+		elseif O:find("dive") then
+			return "Dive Enhancer", "right", "Dive boost power and assist radius."
+		elseif O:find("walk") or O:find("gamepass") then
 			return "Movement", "left", "WalkSpeed mode, movement value, and player utility actions."
 		elseif O:find("jump") and not O:find("angle") then
 			return "Jump Power", "right", "Jump power override settings."
@@ -335,23 +349,31 @@ local function w(D, f, F)
 			return "Anti Restrictions", "left", "Boundary, jam, freeze, block, and jump cooldown protections."
 		end
 	elseif D == "Visual" then
-		if O:find("golden") or O:find("infernal") or O:find("nebula") or O:find("rose") or O:find("night") or O:find("northern") then
+		if O:find("uniform") or O:find("jersey") or O:find("helmet") then
+			return "Uniform Changer", "left", "Jersey number and helmet customization."
+		elseif O:find("golden") or O:find("infernal") or O:find("nebula") or O:find("rose") or O:find("night") or O:find("northern") then
 			return "Skybox Presets", "right", "One-click lighting and sky environment presets."
-		elseif O:find("stadium") or O:find("glove") or O:find("trail") then
-			return "Environment & Gear", "right", "Stadium, uniform glove, and ball trail visuals."
+		elseif O:find("stadium") or O:find("glove") or O:find("trail") or O:find("texture") or O:find("streamer") or O:find("weather") then
+			return "Environment & Gear", "right", "Stadium, uniform glove, weather, and privacy visuals."
 		else
-			return "Ball Prediction", "left", "Jump spot and throw landing trajectory visuals."
+			return "Ball Prediction", "left", "Jump spot, throw trajectory, football ESP, and catch effects."
 		end
 	elseif D == "Defense" then
-		if O:find("tackle") then
+		if O:find("block") then
+			return "Block Reach", "left", "Extended block hitbox and remote assist."
+		elseif O:find("tackle") then
 			return "Tackle Assist", "right", "Tackle reach and ball carrier targeting."
 		else
 			return "Swat Assist", "left", "Swat reach and defensive catch-part assistance."
 		end
 	elseif D == "Automatics" then
-		if O:find("rush") or O:find("line") or O:find("reaction") then
+		if O:find("vote skip") then
+			return "Vote Skip", "right", "Automatically skip replay votes."
+		elseif O:find("reflex") or O:find("ground check") or O:find("catch delay") or O:find("swat delay") then
+			return "Auto Reflex", "right", "Delayed catch/swat and reflex jump settings."
+		elseif O:find("rush") or O:find("line") or O:find("reaction") then
 			return "Auto Rush", "left", "Rush prediction, walk-to-line, and response timing."
-		elseif O:find("catch") or O:find("swat") then
+		elseif (O:find("catch") or O:find("swat")) and not O:find("freeze") then
 			return "Auto Catch / Swat", "right", "Automatic catch and swat actions by distance."
 		elseif O:find("captain") or O:find("auto qb") then
 			return "Role Automation", "left", "Captain selection and quarterback positioning."
@@ -363,11 +385,15 @@ local function w(D, f, F)
 			return "Automatics", "left", "Automatic play helpers."
 		end
 	elseif D == "Misc" then
-		if O:find("replay") then
+		if O:find("global") then
+			return "Chat Tag", "left", "Fake global chat tag customization."
+		elseif O:find("replay") then
 			return "Replay Enhancements", "right", "Smooth replay interpolation and target replay FPS."
 		else
 			return "System", "left", "FPS and general safety utilities."
 		end
+	elseif D == "Trolling" then
+		return "Trolling", "left", "Underground view and touchdown dance."
 	elseif D == "UI Settings" then
 		if O:find("menu") or O:find("scale") or O:find("notif") then
 			return "Window & Navigation", "right", "Keybinds and general interface settings."
@@ -518,7 +544,7 @@ function q.CreateWindow(F, D)
 		BackgroundColor3 = N.MainBG,
 		AnchorPoint = Vector2.new(.5, .5);
 		Position = UDim2.new(.5, 0, .5, 0);
-		Size = UDim2.new(0, 740, 0, 500),
+		Size = UDim2.new(0, 820, 0, 560),
 		BorderSizePixel = 0
 	})
 	y(W, function()
@@ -913,7 +939,7 @@ function q.CreateWindow(F, D)
 			})):Play()
 		end
 	end)
-	local aA = "FF3 v1.4"
+	local aA = "FF3 God"
 	local HA = t:GetTextSize(aA, 22, Enum.Font.GothamBold, Vector2.new(1000, 48))
 	local bA = S("TextLabel", {
 		Parent = FA,
@@ -921,7 +947,7 @@ function q.CreateWindow(F, D)
 		Position = UDim2.new(0, 22, 0, 0),
 		Size = UDim2.new(0, HA.X + 20, 1, 0),
 		Font = Enum.Font.GothamBold,
-		Text = "<b>FF3</b> <font color=\'rgb(178,112,255)\'>v1.4</font>",
+		Text = "<b>FF3</b> <font color=\'rgb(178,112,255)\'>God</font>",
 		RichText = true,
 		TextColor3 = N.TextMain;
 		TextSize = 21,
@@ -2878,7 +2904,7 @@ function q.CreateWindow(F, D)
 			Parent = b,
 			BackgroundTransparency = 1;
 			Size = UDim2.new(1, 0, 1, 0),
-			ScrollBarThickness = 2;
+			ScrollBarThickness = 4;
 			ScrollBarImageColor3 = N.Border,
 			BorderSizePixel = 0,
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -2906,7 +2932,7 @@ function q.CreateWindow(F, D)
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Padding = UDim.new(0, 12)
 		})
-		local i = 259
+		local i = 300
 		local d = S("Frame", {
 			Name = "LeftColumn",
 			Parent = V;
@@ -3014,7 +3040,7 @@ function q.CreateWindow(F, D)
 			Parent = f;
 			BackgroundTransparency = 1;
 			Size = UDim2.new(1, 0, 1, 0);
-			ScrollBarThickness = 2,
+			ScrollBarThickness = 4,
 			ScrollBarImageColor3 = N.Border,
 			BorderSizePixel = 0,
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -3039,7 +3065,7 @@ function q.CreateWindow(F, D)
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Padding = UDim.new(0, 12)
 		})
-		local e = 259
+		local e = 300
 		local v = S("Frame", {
 			Name = "LeftColumn",
 			Parent = O,
@@ -3450,7 +3476,7 @@ function q.CreateWindow(F, D)
 	return I
 end
 local k = q:CreateWindow({
-	Title = "na",
+	Title = "FF3 God",
 	Prefix = "Lyra";
 	Theme = "Minimal White"
 })
@@ -3538,6 +3564,52 @@ throwHeightOffset = M:CreateSlider({
 	Increment = .1,
 	Suffix = "",
 	Tip = "Adjusts the height of targeted throws."
+})
+
+dimeLead = M:CreateSlider({
+	Name = "Dime Lead",
+	Min = 6,
+	Max = 10,
+	Default = 8.6,
+	Increment = .01,
+	Suffix = "",
+	Tip = "Fine tunes lead distance for Dime throws."
+})
+magLead = M:CreateSlider({
+	Name = "Mag Lead",
+	Min = 6,
+	Max = 10,
+	Default = 8.75,
+	Increment = .01,
+	Suffix = "",
+	Tip = "Fine tunes lead distance for Mag throws."
+})
+diveLead = M:CreateSlider({
+	Name = "Dive Lead",
+	Min = 6,
+	Max = 10,
+	Default = 8.65,
+	Increment = .01,
+	Suffix = "",
+	Tip = "Fine tunes lead distance for Dive throws."
+})
+jumpLead = M:CreateSlider({
+	Name = "Jump Lead",
+	Min = 6,
+	Max = 10,
+	Default = 8.45,
+	Increment = .01,
+	Suffix = "",
+	Tip = "Fine tunes lead distance for Jump throws."
+})
+bulletLead = M:CreateSlider({
+	Name = "Bullet Lead",
+	Min = - 10,
+	Max = 10,
+	Default = 1.2,
+	Increment = .01,
+	Suffix = "",
+	Tip = "Fine tunes lead distance for Bullet throws."
 })
 autoJuke = M:CreateToggle({
 	Name = "Auto Juke Rusher";
@@ -4511,15 +4583,15 @@ local BA = function(D)
 end
 local EA = function(D)
 	if D == "Dime" then
-		return DA
+		return dimeLead and dimeLead.Value or DA
 	elseif D == "Mag" then
-		return fA
+		return magLead and magLead.Value or fA
 	elseif D == "Dive" then
-		return FA
+		return diveLead and diveLead.Value or FA
 	elseif D == "Jump" then
-		return OA
+		return jumpLead and jumpLead.Value or OA
 	elseif D == "Bullet" then
-		return sA
+		return bulletLead and bulletLead.Value or sA
 	end
 	return 8.6
 end
@@ -5522,6 +5594,28 @@ local HO = function()
 	end
 	return O
 end
+local _godCatchParts = {}
+local getGodCatchParts = function()
+	table.clear(_godCatchParts)
+	local D = vO.Character
+	if not D then
+		return _godCatchParts
+	end
+	for D, f in next, D:GetChildren() do
+		if f:IsA("BasePart") and (f.Name:lower()):find("catch") then
+			_godCatchParts[# _godCatchParts + 1] = f
+		end
+	end
+	return _godCatchParts
+end
+local safeGodFireTouch = function(part, transmitter, toggle)
+	if not part or not transmitter then
+		return
+	end
+	pcall(function()
+		firetouchinterest(part, transmitter, toggle)
+	end)
+end
 local bO = function()
 	local D = tonumber(magnetsRadius.Value) or 0
 	local f = (tostring(magsType.Value or "Custom")):lower()
@@ -5595,9 +5689,18 @@ magEnhancerRadius = eO:CreateSlider({
 	Suffix = "",
 	Tip = "Sets the maximum distance the enhancer can assist catches."
 })
+magEnhancerMinAngle = eO:CreateSlider({
+	Name = "Mag Min Angle",
+	Min = 40,
+	Max = 70,
+	Default = 40,
+	Increment = .1,
+	Suffix = "",
+	Tip = "Sets the minimum vertical angle the enhancer can assist."
+})
 magEnhancerMaxAngle = eO:CreateSlider({
 	Name = "Mag Max Angle",
-	Min = 50;
+	Min = 40;
 	Max = 70,
 	Default = 50;
 	Increment = .1;
@@ -5624,7 +5727,7 @@ task.spawn(function()
 				break
 			end
 			local O = F.Position.Y - f.Position.Y
-			if O > magEnhancerMaxAngle.Value then
+			if O < magEnhancerMinAngle.Value or O > magEnhancerMaxAngle.Value then
 				break
 			end
 			local s = f.CFrame.LookVector
@@ -5659,6 +5762,11 @@ pullVector = eO:CreateToggle({
 	Default = false;
 	Tip = "Pulls nearby footballs toward your catch position."
 })
+showPullPredictionSpot = eO:CreateToggle({
+	Name = "Show Pull Prediction Spot",
+	Default = false,
+	Tip = "Displays the adjusted spot Pull Vector is aiming at."
+})
 pullVectorRadius = eO:CreateSlider({
 	Name = "Pull Vector Radius";
 	Min = 0;
@@ -5677,11 +5785,24 @@ pullVectorPower = eO:CreateSlider({
 	Suffix = "";
 	Tip = "Controls how strongly footballs are pulled toward you."
 })
+local _pullPredictionSpot = Instance.new("Part")
+_pullPredictionSpot.Name = "FF3_PullPredictionSpot"
+_pullPredictionSpot.Anchored = true
+_pullPredictionSpot.CanCollide = false
+_pullPredictionSpot.CanTouch = false
+_pullPredictionSpot.CanQuery = false
+_pullPredictionSpot.CastShadow = false
+_pullPredictionSpot.Shape = Enum.PartType.Ball
+_pullPredictionSpot.Material = Enum.Material.Neon
+_pullPredictionSpot.Color = Color3.fromRGB(101, 101, 176)
+_pullPredictionSpot.Size = Vector3.new(1.5, 1.5, 1.5)
+_pullPredictionSpot.Transparency = .25
 task.spawn(function()
 	while true do
 		repeat
 			task.wait()
 			if not pullVector.Value then
+				_pullPredictionSpot.Parent = nil
 				break
 			end
 			local D = vO.Character
@@ -5700,8 +5821,18 @@ task.spawn(function()
 			if O > pullVectorRadius.Value then
 				break
 			end
-			local s = ((F.Position - f.Position)).Unit
-			f.AssemblyLinearVelocity = s * ((pullVectorPower.Value * 25))
+			local targetPos = F.Position
+			if showPullPredictionSpot.Value then
+				_pullPredictionSpot.Position = targetPos
+				_pullPredictionSpot.Parent = workspace.Terrain
+			else
+				_pullPredictionSpot.Parent = nil
+			end
+			local s = targetPos - f.Position
+			if s.Magnitude <= 0 then
+				break
+			end
+			f.AssemblyLinearVelocity = s.Unit * ((pullVectorPower.Value * 25))
 		until true
 	end
 end)
@@ -5733,10 +5864,98 @@ task.spawn(function()
 					if not f:IsA("BasePart") then
 						break
 					end
-					if not (f.Name:lower()):find("t arm") then
+					local partName = f.Name:lower()
+					if not (partName:find("t arm") or partName:find("left arm") or partName:find("right arm")) then
 						break
 					end
 					f.Size = Vector3.new(f.Size.X, increaseArmSize.Value and armSizeValue.Value or 2, f.Size.Z)
+				until true
+			end
+		until true
+	end
+end)
+eO:CreateDivider()
+blatantMagnets = eO:CreateToggle({
+	Name = "Blatant Magnets",
+	Default = false,
+	Tip = "Aggressive CFrame pull and touch-interest catch assist."
+})
+blatantMagnetRange = eO:CreateSlider({
+	Name = "Blatant Catch Distance",
+	Min = 0,
+	Max = 45,
+	Default = 0,
+	Increment = .1,
+	Suffix = "",
+	Tip = "Maximum distance for blatant magnet assist."
+})
+task.spawn(function()
+	while true do
+		repeat
+			task.wait()
+			if not blatantMagnets.Value then
+				break
+			end
+			local D = vO.Character
+			if not D then
+				break
+			end
+			local f = D:FindFirstChild("HumanoidRootPart")
+			if not f then
+				break
+			end
+			local F = getGodCatchParts()
+			if # F == 0 then
+				break
+			end
+			local O = HO()
+			if not O or not O.Parent then
+				break
+			end
+			local s = ((O.Position - f.Position)).Magnitude
+			if s <= 0 or s > blatantMagnetRange.Value then
+				break
+			end
+			local r = f.CFrame
+			local e = (O.Position - f.Position).Unit * math.clamp(s, 0, 10)
+			f.CFrame = CFrame.lookAt(f.Position + e, O.Position)
+			R.RenderStepped:Wait()
+			f.CFrame = r
+		until true
+	end
+end)
+task.spawn(function()
+	while true do
+		repeat
+			task.wait()
+			if not blatantMagnets.Value then
+				break
+			end
+			local D = vO.Character
+			if not D then
+				break
+			end
+			local f = getGodCatchParts()
+			if # f == 0 then
+				break
+			end
+			local F = HO()
+			if not F or not F.Parent then
+				break
+			end
+			for D, O in next, f do
+				repeat
+					if not O:IsA("BasePart") or not O.Parent then
+						break
+					end
+					local s = ((F.Position - O.Position)).Magnitude
+					if s > blatantMagnetRange.Value then
+						break
+					end
+					safeGodFireTouch(O, F, 0)
+					safeGodFireTouch(O, F, 1)
+					task.wait()
+					safeGodFireTouch(O, F, 1)
 				until true
 			end
 		until true
@@ -6068,6 +6287,219 @@ task.spawn(function()
 	end
 end)
 tO:CreateDivider()
+enableFly = tO:CreateToggle({
+	Name = "Enable Fly",
+	Default = false,
+	Tip = "Fly using WASD, Q/E for vertical movement.",
+	Callback = function(D)
+		if D then
+			godStartFly()
+		else
+			godStopFly()
+		end
+	end
+})
+flySpeed = tO:CreateSlider({
+	Name = "Fly Speed",
+	Min = 10,
+	Max = 200,
+	Default = 50,
+	Increment = 1,
+	Suffix = "",
+	Tip = "Movement speed while flying."
+})
+local _flyGyro, _flyVel, _flyConn
+local function godStartFly()
+	local D = vO.Character
+	if not D then
+		return
+	end
+	local f = D:FindFirstChild("HumanoidRootPart")
+	if not f then
+		return
+	end
+	godStopFly()
+	_flyGyro = Instance.new("BodyGyro")
+	_flyVel = Instance.new("BodyVelocity")
+	_flyGyro.P = 9e4
+	_flyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+	_flyGyro.CFrame = f.CFrame
+	_flyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+	_flyVel.Velocity = Vector3.zero
+	_flyGyro.Parent = f
+	_flyVel.Parent = f
+	_flyConn = R.Heartbeat:Connect(function()
+		if not enableFly.Value or not f.Parent then
+			return
+		end
+		local F = H.CurrentCamera
+		local O = F.CFrame.LookVector
+		local s = Vector3.zero
+		if u:IsKeyDown(Enum.KeyCode.W) then
+			s = s + O
+		end
+		if u:IsKeyDown(Enum.KeyCode.S) then
+			s = s - O
+		end
+		if u:IsKeyDown(Enum.KeyCode.D) then
+			s = s + F.CFrame.RightVector
+		end
+		if u:IsKeyDown(Enum.KeyCode.A) then
+			s = s - F.CFrame.RightVector
+		end
+		if u:IsKeyDown(Enum.KeyCode.E) then
+			s = s + Vector3.new(0, 1, 0)
+		end
+		if u:IsKeyDown(Enum.KeyCode.Q) then
+			s = s - Vector3.new(0, 1, 0)
+		end
+		if s.Magnitude > 0 then
+			s = s.Unit * flySpeed.Value
+		end
+		_flyVel.Velocity = s
+		_flyGyro.CFrame = F.CFrame
+	end)
+end
+function godStopFly()
+	if _flyConn then
+		_flyConn:Disconnect()
+		_flyConn = nil
+	end
+	if _flyGyro then
+		pcall(function()
+			_flyGyro:Destroy()
+		end)
+		_flyGyro = nil
+	end
+	if _flyVel then
+		pcall(function()
+			_flyVel:Destroy()
+		end)
+		_flyVel = nil
+	end
+end
+customDiveBoost = tO:CreateToggle({
+	Name = "Custom Dive Boost",
+	Default = false,
+	Tip = "Boosts dive velocity and assists toward ball or carrier."
+})
+diveBoostPower = tO:CreateSlider({
+	Name = "Dive Boost Power",
+	Min = 5,
+	Max = 25,
+	Default = 5,
+	Increment = .1,
+	Suffix = "",
+	Tip = "Extra velocity applied when diving."
+})
+diveAssistRadius = tO:CreateSlider({
+	Name = "Dive Assist Activation Radius",
+	Min = 0,
+	Max = 45,
+	Default = 0,
+	Increment = .1,
+	Suffix = "",
+	Tip = "Range to redirect dive toward target."
+})
+local getGodBallHolder = function()
+	local D = math.huge
+	local f = nil
+	local F = vO.Character
+	if not F then
+		return nil
+	end
+	local O = F:FindFirstChild("HumanoidRootPart")
+	if not O then
+		return nil
+	end
+	for s, r in next, I:GetPlayers() do
+		repeat
+			if r == vO or r.Team == vO.Team then
+				break
+			end
+			local s = r.Character
+			if not s or not s:FindFirstChildOfClass("Tool") then
+				break
+			end
+			local e = s:FindFirstChild("HumanoidRootPart")
+			if not e then
+				break
+			end
+			local v = ((e.Position - O.Position)).Magnitude
+			if v < D then
+				D = v
+				f = r
+			end
+		until true
+	end
+	return f
+end
+local _diveConn
+task.spawn(function()
+	while true do
+		repeat
+			task.wait()
+			if not customDiveBoost.Value then
+				if _diveConn then
+					_diveConn:Disconnect()
+					_diveConn = nil
+				end
+				break
+			end
+			local D = vO.Character
+			if not D then
+				break
+			end
+			local f = D:FindFirstChildOfClass("Humanoid")
+			local F = D:FindFirstChild("HumanoidRootPart")
+			if not f or not F then
+				break
+			end
+			if _diveConn then
+				break
+			end
+			_diveConn = f:GetPropertyChangedSignal("PlatformStand"):Connect(function()
+				if not customDiveBoost.Value or not f.PlatformStand then
+					return
+				end
+				task.wait(.05)
+				local O = HO()
+				local s = getGodBallHolder()
+				local r
+				if O then
+					r = O.Position
+				elseif s and s.Character then
+					local D = s.Character:FindFirstChild("HumanoidRootPart")
+					if D then
+						r = D.Position
+					end
+				end
+				if r then
+					local e = r - F.Position
+					local v = e.Magnitude
+					if diveAssistRadius.Value > 0 and v <= diveAssistRadius.Value and v > 0 then
+						local a = Vector3.new(e.X, 0, e.Z)
+						if a.Magnitude > 0 then
+							local D = F.AssemblyLinearVelocity
+							local f = D.Magnitude
+							if f > 0 then
+								F.AssemblyLinearVelocity = a.Unit * f
+							end
+						end
+					end
+				end
+				F.AssemblyLinearVelocity = F.AssemblyLinearVelocity + (f.MoveDirection * diveBoostPower.Value)
+			end)
+		until true
+	end
+end)
+vO.CharacterAdded:Connect(function()
+	task.wait(.5)
+	if enableFly.Value then
+		godStartFly()
+	end
+end)
+tO:CreateDivider()
 tO:CreateButton({
 	Name = "Unlock All Gamepass";
 	Tip = "Enables all gamepass-related checks locally.",
@@ -6133,6 +6565,46 @@ task.spawn(function()
 		until true
 	end
 end)
+endzoneReach = KO:CreateToggle({
+	Name = "Extend Endzone Reach",
+	Default = false,
+	Tip = "Extends goal-line touch reach for endzone scoring."
+})
+endzoneReachValue = KO:CreateSlider({
+	Name = "Endzone Reach",
+	Min = 5,
+	Max = 15,
+	Default = 5,
+	Increment = 1,
+	Suffix = "",
+	Tip = "Sets how far the endzone reach parts extend."
+})
+local _endzoneOriginalSize = {}
+task.spawn(function()
+	while true do
+		task.wait()
+		for _, endPart in next, workspace:GetDescendants() do
+			repeat
+				if not endPart:IsA("BasePart") then
+					break
+				end
+				if not (endPart.Name:lower()):find("linegoal") then
+					break
+				end
+				if not _endzoneOriginalSize[endPart] then
+					_endzoneOriginalSize[endPart] = endPart.Size
+				end
+				local originalSize = _endzoneOriginalSize[endPart]
+				if endzoneReach.Value then
+					local zSize = endzoneReachValue.Value >= 10 and endzoneReachValue.Value or endzoneReachValue.Value / 10
+					endPart.Size = Vector3.new(originalSize.X, originalSize.Y, zSize)
+				else
+					endPart.Size = originalSize
+				end
+			until true
+		end
+	end
+end)
 KO:CreateDivider()
 antiJam = KO:CreateToggle({
 	Name = "Anti Jam",
@@ -6196,6 +6668,24 @@ antiBlock = KO:CreateToggle({
 	Default = false;
 	Tip = "Reduces player collision while moving."
 })
+antiBlockActivation = KO:CreateSlider({
+	Name = "Anti Block Activation",
+	Min = 0,
+	Max = 100,
+	Default = 100,
+	Increment = 1,
+	Suffix = "%",
+	Tip = "Chance to remove active block movers each tick."
+})
+blockKnockbackForce = KO:CreateSlider({
+	Name = "Block Knockback Force",
+	Min = 0,
+	Max = 10,
+	Default = 0,
+	Increment = 1,
+	Suffix = "",
+	Tip = "Adds movement force while resisting blocks."
+})
 task.spawn(function()
 	while true do
 		repeat
@@ -6211,17 +6701,27 @@ task.spawn(function()
 			if not f then
 				break
 			end
+			local rootPart = D:FindFirstChild("HumanoidRootPart")
 			for D, F in next, D:GetDescendants() do
 				repeat
 					if not F:IsA("BodyVelocity") then
 						break
 					end
-					F.Velocity = Vector3.zero
-					F.MaxForce = Vector3.zero
-					f.WalkSpeed = 20
-					pcall(function()
-						F:Destroy()
-					end)
+					if rootPart and blockKnockbackForce.Value > 0 then
+						local moveDir = f.MoveDirection
+						if moveDir.Magnitude <= 0 then
+							moveDir = rootPart.CFrame.LookVector
+						end
+						rootPart.AssemblyLinearVelocity = moveDir * (15 * blockKnockbackForce.Value)
+					end
+					if math.random(1, 100) <= math.clamp(antiBlockActivation.Value, 0, 100) then
+						F.Velocity = Vector3.zero
+						F.MaxForce = Vector3.zero
+						f.WalkSpeed = 20
+						pcall(function()
+							F:Destroy()
+						end)
+					end
 				until true
 			end
 		until true
@@ -6519,6 +7019,77 @@ workspace.ChildAdded:Connect(function(D)
 		end
 	end)
 end)
+footballESP = nO:CreateToggle({
+	Name = "Football ESP",
+	Default = false,
+	Tip = "Highlights footballs through objects."
+})
+task.spawn(function()
+	while true do
+		task.wait()
+		for _, ball in next, workspace:GetChildren() do
+			repeat
+				if not ball:IsA("BasePart") or ball.Name ~= "Football" then
+					break
+				end
+				local highlight = ball:FindFirstChild("FF3_FootballESP")
+				if not highlight then
+					highlight = Instance.new("Highlight")
+					highlight.Name = "FF3_FootballESP"
+					highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+					highlight.FillColor = Color3.fromRGB(245, 255, 238)
+					highlight.Adornee = ball
+					highlight.Parent = ball
+				end
+				highlight.Enabled = footballESP.Value
+			until true
+		end
+	end
+end)
+catchEffect = nO:CreateToggle({
+	Name = "Catch Effect",
+	Default = false,
+	Tip = "Plays a short visual burst when you catch the football."
+})
+local function _godPlayCatchEffect(tool)
+	if not catchEffect.Value then return end
+	if not tool:IsA("Tool") or tool.Name ~= "Football" then return end
+	local character = vO.Character
+	local head = character and character:FindFirstChild("Head")
+	if not head then return end
+	local function makeBurst(size, material, transparency)
+		local part = Instance.new("Part")
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false
+		part.CastShadow = false
+		part.Size = Vector3.new(size, size, size)
+		part.Material = material
+		part.Shape = Enum.PartType.Ball
+		part.Position = head.Position
+		part.Color = Color3.fromRGB(101, 101, 176)
+		part.Transparency = transparency
+		part.Parent = workspace.Terrain
+		local tw = P:Create(part, TweenInfo.new(1), {Transparency = 1})
+		tw:Play()
+		tw.Completed:Connect(function()
+			if part then part:Destroy() end
+		end)
+	end
+	makeBurst(8, Enum.Material.ForceField, 0)
+	makeBurst(5, Enum.Material.Neon, .05)
+end
+local function _godHookCatchEffect(character)
+	for _, child in next, character:GetChildren() do
+		if child:IsA("Tool") then _godPlayCatchEffect(child) end
+	end
+	character.ChildAdded:Connect(function(child)
+		if child:IsA("Tool") then _godPlayCatchEffect(child) end
+	end)
+end
+if vO.Character then _godHookCatchEffect(vO.Character) end
+vO.CharacterAdded:Connect(_godHookCatchEffect)
 nO:CreateDivider()
 enableGloves = nO:CreateToggle({
 	Name = "Enable Uniform Gloves";
@@ -6564,6 +7135,75 @@ task.spawn(function()
 	end
 end)
 nO:CreateDivider()
+uniformChanger = nO:CreateToggle({
+	Name = "Enable Uniform Changer",
+	Default = false,
+	Tip = "Customize jersey number and helmet appearance."
+})
+shinyHelmet = nO:CreateToggle({
+	Name = "Enable Shiny Helmet",
+	Default = false,
+	Tip = "Applies a reflective white helmet finish."
+})
+jerseyNumberBox = nO:CreateTextbox({
+	Name = "Jersey Number",
+	Default = "7",
+	Placeholder = "Enter jersey number...",
+	MaxLength = 2,
+	Tip = "Jersey number to apply when uniform changer is enabled.",
+	Callback = function(D)
+		_godJerseyNum = tonumber(D) or math.random(0, 99)
+	end
+})
+_godJerseyNum = 7
+local _helmetOrig = {}
+task.spawn(function()
+	while true do
+		repeat
+			task.wait()
+			local D = vO.Character
+			if not D then
+				break
+			end
+			local f = D:FindFirstChild("Uniform")
+			if not f then
+				break
+			end
+			for D, F in next, f:GetDescendants() do
+				repeat
+					if F:IsA("TextLabel") then
+						if uniformChanger.Value and string.match(F.Text, "^%d+$") and tonumber(F.Text) ~= _godJerseyNum then
+							Z.Remotes.CharacterSoundEvent:FireServer("Game", "Customization", "Number", _godJerseyNum)
+						end
+					elseif F:IsA("BasePart") and (F.Name:lower()):find("helmet") then
+						local O = F:FindFirstChildOfClass("SpecialMesh") or F:FindFirstChildOfClass("Mesh")
+						if not _helmetOrig[F] then
+							_helmetOrig[F] = {
+								Color = F.Color,
+								Reflectance = F.Reflectance,
+								TextureId = O and O.TextureId or ""
+							}
+						end
+						if uniformChanger.Value and shinyHelmet.Value then
+							F.Color = Color3.fromRGB(255, 255, 255)
+							F.Reflectance = 1
+							if O then
+								O.TextureId = ""
+							end
+						elseif _helmetOrig[F] then
+							F.Color = _helmetOrig[F].Color
+							F.Reflectance = _helmetOrig[F].Reflectance
+							if O then
+								O.TextureId = _helmetOrig[F].TextureId
+							end
+						end
+					end
+				until true
+			end
+		until true
+	end
+end)
+nO:CreateDivider()
 noBallTrail = nO:CreateToggle({
 	Name = "No Ball Trail",
 	Default = false,
@@ -6604,6 +7244,106 @@ hideStadium = nO:CreateToggle({
 		end
 	end
 })
+local _noTextureOriginals = {}
+local function _godSetNoTextures(state)
+	for _, part in next, workspace:GetDescendants() do
+		repeat
+			if not part:IsA("BasePart") or part.Material == Enum.Material.ForceField then break end
+			if state then
+				if not _noTextureOriginals[part] then _noTextureOriginals[part] = part.Material end
+				part.Material = Enum.Material.SmoothPlastic
+			elseif _noTextureOriginals[part] then
+				part.Material = _noTextureOriginals[part]
+				_noTextureOriginals[part] = nil
+			end
+		until true
+	end
+end
+noTextures = nO:CreateToggle({
+	Name = "No Textures",
+	Default = false,
+	Tip = "Replaces world materials with SmoothPlastic for cleaner visuals.",
+	Callback = function(D) _godSetNoTextures(D) end
+})
+workspace.DescendantAdded:Connect(function(part)
+	if noTextures.Value and part:IsA("BasePart") and part.Material ~= Enum.Material.ForceField then
+		_noTextureOriginals[part] = part.Material
+		part.Material = Enum.Material.SmoothPlastic
+	end
+end)
+streamerMode = nO:CreateToggle({
+	Name = "Streamer Mode",
+	Default = false,
+	Tip = "Replaces your name and profile image in visible UI."
+})
+streamerNameBox = nO:CreateTextbox({
+	Name = "Streamer Name",
+	Default = "roblox_user_13579",
+	Placeholder = "Name to show...",
+	MaxLength = 32,
+	Tip = "Name used while Streamer Mode is enabled.",
+	Callback = function(D)
+		_godStreamerName = tostring(D or "roblox_user_13579")
+		if _godStreamerName == "" then _godStreamerName = "roblox_user_13579" end
+	end
+})
+streamerImageBox = nO:CreateTextbox({
+	Name = "Streamer Image Id",
+	Default = "98249121278107",
+	Placeholder = "Image id...",
+	MaxLength = 32,
+	Tip = "Image asset id used while Streamer Mode is enabled.",
+	Callback = function(D)
+		_godStreamerImageId = tostring(D or "98249121278107")
+		if _godStreamerImageId == "" then _godStreamerImageId = "98249121278107" end
+	end
+})
+_godStreamerName = "roblox_user_13579"
+_godStreamerImageId = "98249121278107"
+local _streamerOriginalText = {}
+local _streamerOriginalImage = {}
+local function _godIsLocalNameText(obj)
+	local lower = string.lower(tostring(obj.Text or ""))
+	local name = string.lower(vO.Name or "")
+	local display = string.lower(vO.DisplayName or "")
+	return (name ~= "" and string.find(lower, name, 1, true)) or (display ~= "" and string.find(lower, display, 1, true))
+end
+local function _godIsLocalImage(obj)
+	return string.find(tostring(obj.Image or ""), tostring(vO.UserId), 1, true) ~= nil
+end
+local function _godApplyStreamerMode(state)
+	if not state then
+		for obj, original in pairs(_streamerOriginalText) do if obj and obj.Parent then pcall(function() obj.Text = original end) end end
+		for obj, original in pairs(_streamerOriginalImage) do if obj and obj.Parent then pcall(function() obj.Image = original end) end end
+		return
+	end
+	for obj in pairs(_streamerOriginalText) do if obj and obj.Parent then pcall(function() obj.Text = _godStreamerName end) end end
+	for obj in pairs(_streamerOriginalImage) do if obj and obj.Parent then pcall(function() obj.Image = "rbxassetid://" .. tostring(_godStreamerImageId) end) end end
+	for _, obj in next, game:GetDescendants() do
+		repeat
+			if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+				if _godIsLocalNameText(obj) then
+					_streamerOriginalText[obj] = _streamerOriginalText[obj] or obj.Text
+					pcall(function() obj.Text = _godStreamerName end)
+				end
+			elseif obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+				if _godIsLocalImage(obj) then
+					_streamerOriginalImage[obj] = _streamerOriginalImage[obj] or obj.Image
+					pcall(function() obj.Image = "rbxassetid://" .. tostring(_godStreamerImageId) end)
+				end
+			end
+		until true
+	end
+end
+game.DescendantAdded:Connect(function(obj)
+	if streamerMode.Value then task.defer(function() _godApplyStreamerMode(true) end) end
+end)
+task.spawn(function()
+	while true do
+		task.wait(.5)
+		_godApplyStreamerMode(streamerMode.Value)
+	end
+end)
 nO:CreateDivider()
 local cO = game:GetService("Lighting")
 local function TO(D)
@@ -6726,6 +7466,39 @@ for D, f in next, gO do
 		end
 	})
 end
+nO:CreateDivider()
+changeWeather = nO:CreateToggle({
+	Name = "Enable Change Weather",
+	Default = false,
+	Tip = "Toggles stadium weather particle effects."
+})
+weatherType = nO:CreateDropdown({
+	Name = "Select Weather",
+	Options = {
+		"Rain",
+		"Snow",
+		"Confetti"
+	},
+	Default = "Rain",
+	Tip = "Weather effect to enable."
+})
+local function _godUpdateWeather()
+	local sky = workspace:FindFirstChild("SkyWeather")
+	if not sky then return end
+	local wanted = string.lower(tostring(weatherType.Value or ""))
+	for _, particle in next, sky:GetDescendants() do
+		if particle:IsA("ParticleEmitter") then
+			local name = string.lower(particle.Name or "")
+			particle.Enabled = changeWeather.Value and wanted ~= "" and string.find(name, wanted, 1, true) ~= nil
+		end
+	end
+end
+task.spawn(function()
+	while true do
+		task.wait(.5)
+		_godUpdateWeather()
+	end
+end)
 local wO = k:CreateTab({
 	Name = "Defense";
 	Icon = "rbxassetid://14939023862"
@@ -6787,11 +7560,29 @@ tackleAimbot = wO:CreateToggle({
 tackleAimbotRange = wO:CreateSlider({
 	Name = "Tackle Aimbot Distance",
 	Min = 0;
-	Max = 25,
+	Max = 35,
 	Default = 0,
 	Increment = .1;
 	Suffix = "",
 	Tip = "Sets the maximum targeting distance."
+})
+tackleAimbotType = wO:CreateDropdown({
+	Name = "Tackle Aimbot Type",
+	Options = {
+		"Teleport",
+		"Glide"
+	},
+	Default = "Teleport",
+	Tip = "How tackle aimbot moves toward the carrier."
+})
+tackleGlidePower = wO:CreateSlider({
+	Name = "Tackle Glide Power",
+	Min = 0,
+	Max = 10,
+	Default = 1,
+	Increment = .1,
+	Suffix = "",
+	Tip = "Glide strength when using Glide tackle mode."
 })
 task.spawn(function()
 	while true do
@@ -6819,15 +7610,204 @@ task.spawn(function()
 				end
 			end
 			if tackleAimbot.Value then
-				for f, F in next, I:GetPlayers() do
-					if F ~= vO and (F.Team ~= vO.Team and (F.Character and (F.Character.Humanoid.WalkSpeed > 0 and F.Character:FindFirstChild("Football")))) then
-						local f = ((F.Character.HumanoidRootPart.Position - D.HumanoidRootPart.Position)).Magnitude
-						if f < tackleAimbotRange.Value then
-							D.HumanoidRootPart.CFrame = F.Character.HumanoidRootPart.CFrame
-							D.HumanoidRootPart.CFrame = F.Character.HumanoidRootPart.CFrame
-						end
+				local f = D:FindFirstChild("HumanoidRootPart")
+				if not f then
+					break
+				end
+				local F = getGodBallHolder()
+				if not F or not F.Character then
+					break
+				end
+				local O = Z:FindFirstChild("Flags")
+				if O then
+					local s = O:FindFirstChild("Status")
+					if s and s.Value ~= "InPlay" then
+						break
 					end
 				end
+				local s = F.Character
+				local r = s:FindFirstChild("HumanoidRootPart")
+				if not r then
+					break
+				end
+				local e = ((r.Position - f.Position)).Magnitude
+				if e > tackleAimbotRange.Value then
+					break
+				end
+				local v = (r.Position - f.Position).Unit
+				local a = {
+					"Head",
+					"Torso",
+					"Left Arm",
+					"Right Arm",
+					"Left Leg",
+					"Right Leg"
+				}
+				local H = a[math.random(1, # a)]
+				local b = D:FindFirstChild(H)
+				local t = s:FindFirstChild(H)
+				if b and t then
+					if tackleAimbotType.Value == "Glide" then
+						b.CFrame = b.CFrame + v * (tackleGlidePower.Value * 2)
+					else
+						b.CFrame = t.CFrame
+					end
+				end
+			end
+		until true
+	end
+end)
+wO:CreateDivider()
+blockReach = wO:CreateToggle({
+	Name = "Extend Block Reach",
+	Default = false,
+	Tip = "Extends block hitbox and auto-fires block remotes."
+})
+showBlockHitbox = wO:CreateToggle({
+	Name = "Show Block Hitbox",
+	Default = false,
+	Tip = "Visualizes the block reach area."
+})
+blockQBCheck = wO:CreateToggle({
+	Name = "Block QB Check",
+	Default = false,
+	Tip = "Only targets players without the football tool."
+})
+blockLookAtTarget = wO:CreateToggle({
+	Name = "Look At Block Target",
+	Default = false,
+	Tip = "Rotates toward the nearest block target."
+})
+blockLateralReach = wO:CreateSlider({
+	Name = "Block Lateral Reach",
+	Min = 1,
+	Max = 25,
+	Default = 1,
+	Increment = .1,
+	Suffix = "",
+	Tip = "Side-to-side block reach."
+})
+blockLongReach = wO:CreateSlider({
+	Name = "Block Longitudinal Reach",
+	Min = 1,
+	Max = 25,
+	Default = 1,
+	Increment = .1,
+	Suffix = "",
+	Tip = "Forward/back block reach."
+})
+blockMultiplier = wO:CreateSlider({
+	Name = "Block Multiplier",
+	Min = 1,
+	Max = 10,
+	Default = 1,
+	Increment = 1,
+	Suffix = "",
+	Tip = "Number of block remote fires per tick."
+})
+local _blockVis = Instance.new("Part")
+_blockVis.Anchored = true
+_blockVis.CanCollide = false
+_blockVis.Color = Color3.fromRGB(101, 101, 176)
+_blockVis.CastShadow = false
+_blockVis.Transparency = .5
+local findGodClosestEnemy = function()
+	local D = math.huge
+	local f = nil
+	local F = vO.Character
+	if not F then
+		return nil
+	end
+	local O = F:FindFirstChild("HumanoidRootPart")
+	if not O then
+		return nil
+	end
+	for s, r in next, I:GetPlayers() do
+		repeat
+			if r == vO or r.Team == vO.Team then
+				break
+			end
+			local s = r.Character
+			if not s then
+				break
+			end
+			if blockQBCheck.Value and s:FindFirstChildOfClass("Tool") then
+				break
+			end
+			local e = s:FindFirstChild("HumanoidRootPart")
+			if not e then
+				break
+			end
+			local v = ((e.Position - O.Position)).Magnitude
+			if v < D then
+				D = v
+				f = r
+			end
+		until true
+	end
+	return f
+end
+task.spawn(function()
+	while true do
+		repeat
+			task.wait()
+			if not blockReach.Value then
+				_blockVis.Parent = nil
+				break
+			end
+			local D = vO.Character
+			if not D then
+				break
+			end
+			local f = D:FindFirstChildOfClass("Humanoid")
+			local F = D:FindFirstChild("HumanoidRootPart")
+			if not f or not F then
+				break
+			end
+			if showBlockHitbox.Value then
+				_blockVis.Parent = workspace
+				_blockVis.Size = Vector3.new(blockLateralReach.Value, 1.75, blockLongReach.Value)
+				_blockVis.CFrame = F.CFrame
+			else
+				_blockVis.Parent = nil
+			end
+			local O = findGodClosestEnemy()
+			if not O or not O.Character then
+				break
+			end
+			local s = O.Character:FindFirstChild("HumanoidRootPart")
+			if not s then
+				break
+			end
+			local r = false
+			for D, e in next, f:GetPlayingAnimationTracks() do
+				if e.Animation and e.Animation.AnimationId == "rbxassetid://3695551500" then
+					r = true
+					break
+				end
+			end
+			if not r then
+				break
+			end
+			local e = s.Position - F.Position
+			if math.abs(e.X) > blockLateralReach.Value or math.abs(e.Z) > blockLongReach.Value then
+				break
+			end
+			if blockLookAtTarget.Value then
+				F.CFrame = CFrame.new(F.Position, Vector3.new(s.Position.X, F.Position.Y, s.Position.Z))
+			end
+			local v = {
+				"Head",
+				"Torso",
+				"Left Arm",
+				"Right Arm",
+				"Left Leg",
+				"Right Leg"
+			}
+			local a = v[math.random(1, # v)]
+			for D = 1, blockMultiplier.Value do
+				Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", "block")
+				Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", "execBlock", O.Name, a)
 			end
 		until true
 	end
@@ -6846,6 +7826,11 @@ walkToLine = kO:CreateToggle({
 	Default = false,
 	Tip = "Moves the player to the line before play starts."
 })
+visualizeRushing = kO:CreateToggle({
+	Name = "Visualize Rushing",
+	Default = false,
+	Tip = "Draws rush target and carrier movement lines while Auto Rush is active."
+})
 autoRushReactionTime = kO:CreateSlider({
 	Name = "Reaction Time",
 	Min = 0;
@@ -6855,10 +7840,100 @@ autoRushReactionTime = kO:CreateSlider({
 	Suffix = "",
 	Tip = "Adjusts how quickly the feature responds."
 })
+local _rushTargetPosition = nil
+local _rushHolderRoot = nil
+local _rushHolderHumanoid = nil
+local _rushMoving = false
+local _rushLines = {}
+local function _newRushLine(thickness)
+	local ok, line = pcall(function()
+		return Drawing and Drawing.new and Drawing.new("Line")
+	end)
+	if ok and line then
+		line.Color = Color3.fromRGB(178, 112, 255)
+		line.Thickness = thickness or 2
+		line.Transparency = 1
+		line.Visible = false
+		return line
+	end
+end
+local function _ensureRushLines()
+	if not _rushLines.localLine then
+		_rushLines.localLine = _newRushLine(2)
+		_rushLines.holderLine = _newRushLine(2)
+		_rushLines.arrowLine = _newRushLine(3)
+	end
+end
+local function _setRushLine(line, fromPos, toPos, visible)
+	if not line then
+		return
+	end
+	line.Visible = visible == true
+	if visible then
+		line.From = fromPos
+		line.To = toPos
+	end
+end
+local function _hideRushLines()
+	_setRushLine(_rushLines.localLine, nil, nil, false)
+	_setRushLine(_rushLines.holderLine, nil, nil, false)
+	_setRushLine(_rushLines.arrowLine, nil, nil, false)
+end
+R.RenderStepped:Connect(function()
+	_ensureRushLines()
+	if not visualizeRushing.Value or not autoRush.Value or not _rushMoving or not _rushTargetPosition then
+		_hideRushLines()
+		return
+	end
+	local character = vO.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local camera = workspace.CurrentCamera or A
+	if not root or not humanoid or not camera then
+		_hideRushLines()
+		return
+	end
+	local localScreen, localVisible = camera:WorldToViewportPoint(root.Position)
+	local targetScreen, targetVisible = camera:WorldToViewportPoint(_rushTargetPosition)
+	if localVisible and targetVisible then
+		_setRushLine(_rushLines.localLine, Vector2.new(localScreen.X, localScreen.Y), Vector2.new(targetScreen.X, targetScreen.Y), true)
+	else
+		_setRushLine(_rushLines.localLine, nil, nil, false)
+	end
+	if _rushHolderRoot and _rushHolderRoot.Parent and _rushHolderHumanoid and _rushHolderHumanoid.Parent then
+		local holderScreen, holderVisible = camera:WorldToViewportPoint(_rushHolderRoot.Position)
+		local holderFuture = _rushHolderRoot.Position + (_rushHolderHumanoid.MoveDirection * 19.96)
+		local holderFutureScreen, holderFutureVisible = camera:WorldToViewportPoint(holderFuture)
+		if holderVisible and holderFutureVisible then
+			_setRushLine(_rushLines.holderLine, Vector2.new(holderScreen.X, holderScreen.Y), Vector2.new(holderFutureScreen.X, holderFutureScreen.Y), true)
+		else
+			_setRushLine(_rushLines.holderLine, nil, nil, false)
+		end
+	else
+		_setRushLine(_rushLines.holderLine, nil, nil, false)
+	end
+	local moveDir = humanoid.MoveDirection
+	if moveDir.Magnitude > 0 then
+		local arrowEnd = root.Position + (moveDir * 10)
+		local arrowStartScreen, arrowStartVisible = camera:WorldToViewportPoint(root.Position)
+		local arrowEndScreen, arrowEndVisible = camera:WorldToViewportPoint(arrowEnd)
+		if arrowStartVisible and arrowEndVisible then
+			_setRushLine(_rushLines.arrowLine, Vector2.new(arrowStartScreen.X, arrowStartScreen.Y), Vector2.new(arrowEndScreen.X, arrowEndScreen.Y), true)
+		else
+			_setRushLine(_rushLines.arrowLine, nil, nil, false)
+		end
+	else
+		_setRushLine(_rushLines.arrowLine, nil, nil, false)
+	end
+end)
 task.spawn(function()
 	while true do
 		repeat
 			task.wait()
+			_rushMoving = false
+			_rushTargetPosition = nil
+			_rushHolderRoot = nil
+			_rushHolderHumanoid = nil
 			if not autoRush.Value then
 				break
 			end
@@ -6879,6 +7954,8 @@ task.spawn(function()
 					local D = workspace:FindFirstChild("LineDown")
 					if D then
 						f:MoveTo(D.Position)
+						_rushTargetPosition = D.Position
+						_rushMoving = true
 					end
 				end
 			end
@@ -6925,6 +8002,10 @@ task.spawn(function()
 						t = t + (V.Unit * ((((F.Position - t)).Magnitude / 20)))
 					end
 					f:MoveTo(t)
+					_rushTargetPosition = t
+					_rushHolderRoot = r
+					_rushHolderHumanoid = s
+					_rushMoving = true
 				until true
 			end
 		until true
@@ -6960,32 +8041,115 @@ autoSwatRadius = kO:CreateSlider({
 	Suffix = "";
 	Tip = "Sets how far the auto swat detection can reach."
 })
+kO:CreateDivider()
+reflexGroundCheck = kO:CreateToggle({
+	Name = "Ball On Ground Check",
+	Default = false,
+	Tip = "Skips auto reflex when the ball is on the ground."
+})
+autoCatchDelay = kO:CreateSlider({
+	Name = "Auto Catch Delay",
+	Min = 0,
+	Max = 1,
+	Default = 0,
+	Increment = .01,
+	Suffix = "s",
+	Tip = "Delay before firing catch remote."
+})
+autoSwatDelay = kO:CreateSlider({
+	Name = "Auto Swat Delay",
+	Min = 0,
+	Max = 1,
+	Default = 0,
+	Increment = .01,
+	Suffix = "s",
+	Tip = "Delay before firing swat remote."
+})
+autoReflexJump = kO:CreateToggle({
+	Name = "Auto Reflex Jump",
+	Default = false,
+	Tip = "Automatically jumps when ball is within reflex radius."
+})
+autoReflexJumpRadius = kO:CreateSlider({
+	Name = "Reflex Jump Radius",
+	Min = 0,
+	Max = 25,
+	Default = 0,
+	Increment = .1,
+	Suffix = "",
+	Tip = "Distance to trigger reflex jump."
+})
+local _lastReflexJump = 0
 task.spawn(function()
 	while true do
 		repeat
 			task.wait()
-			if not autoCatch.Value and not autoSwat.Value then
+			if not autoCatch.Value and not autoSwat.Value and not autoReflexJump.Value then
 				break
 			end
 			local D = vO.Character
 			if not D then
 				break
 			end
-			local f = D:FindFirstChild("HumanoidRootPart")
+			local f = D:FindFirstChildOfClass("Humanoid")
 			if not f then
 				break
 			end
-			local F = HO()
-			if not F then
+			local F = getGodCatchParts()
+			if # F == 0 then
 				break
 			end
-			local O = ((F.Position - f.Position)).Magnitude
-			if autoCatch.Value and O <= autoCatchRadius.Value then
-				Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", l and "catch " or "catch")
+			local O = HO()
+			if not O or not O.Parent then
+				break
 			end
-			if autoSwat.Value and O <= autoSwatRadius.Value then
-				Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", "swat")
+			if reflexGroundCheck.Value and O.Position.Y < 4 then
+				break
 			end
+			for D, s in next, F do
+				repeat
+					local r = ((O.Position - s.Position)).Magnitude
+					if autoCatch.Value and r <= autoCatchRadius.Value then
+						task.delay(autoCatchDelay.Value, function()
+							if autoCatch.Value then
+								Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", l and "catch " or "catch")
+							end
+						end)
+					end
+					if autoSwat.Value and r <= autoSwatRadius.Value then
+						task.delay(autoSwatDelay.Value, function()
+							if autoSwat.Value then
+								Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", "swat")
+							end
+						end)
+					end
+					if autoReflexJump.Value and r <= autoReflexJumpRadius.Value then
+						if tick() - _lastReflexJump >= 3 then
+							_lastReflexJump = tick()
+							f:ChangeState(Enum.HumanoidStateType.Jumping)
+						end
+					end
+				until true
+			end
+		until true
+	end
+end)
+kO:CreateDivider()
+autoVoteSkip = kO:CreateToggle({
+	Name = "Auto Vote Skip",
+	Default = false,
+	Tip = "Automatically votes to skip replays and downtime."
+})
+task.spawn(function()
+	while true do
+		repeat
+			task.wait()
+			if not autoVoteSkip.Value then
+				break
+			end
+			pcall(function()
+				Z.Remotes.CharacterSoundEvent:FireServer("VoteSkip")
+			end)
 		until true
 	end
 end)
@@ -7043,43 +8207,61 @@ freezeKeybind = kO:CreateKeybind({
 	Default = nil,
 	Tip = "Key used to trigger freeze."
 })
-u.InputBegan:Connect(function(D)
-	if not autoFreeze.Value then
-		return
-	end
-	if freezeKeybind.Value and D.KeyCode ~= freezeKeybind.Value then
-		return
-	end
+freezeOnCatch = kO:CreateToggle({
+	Name = "Auto Freeze On Catch",
+	Default = false,
+	Tip = "Triggers Auto Freeze when a football tool is added to your character."
+})
+local function _godDoAutoFreeze()
 	local f = vO.Character
-	if not f then
-		return
-	end
+	if not f then return end
 	local F = f:FindFirstChild("HumanoidRootPart")
-	if not F then
-		return
-	end
+	if not F then return end
 	F.Anchored = true
 	task.delay(freezeDuration.Value, function()
-		if F then
-			F.Anchored = false
+		if F then F.Anchored = false end
+	end)
+end
+u.InputBegan:Connect(function(D)
+	if not autoFreeze.Value then return end
+	if freezeKeybind.Value and D.KeyCode ~= freezeKeybind.Value then return end
+	_godDoAutoFreeze()
+end)
+local function _godHookFreezeOnCatch(character)
+	character.ChildAdded:Connect(function(child)
+		if autoFreeze.Value and freezeOnCatch.Value and child:IsA("Tool") and (child.Name:lower()):find("ball") then
+			_godDoAutoFreeze()
 		end
 	end)
-end)
+end
+if vO.Character then _godHookFreezeOnCatch(vO.Character) end
+vO.CharacterAdded:Connect(_godHookFreezeOnCatch)
 kO:CreateDivider()
 autoQb = kO:CreateToggle({
 	Name = "Auto QB";
 	Default = false,
 	Tip = "Automatically positions your character for quarterback play."
 })
+autoQbActivationDelay = kO:CreateSlider({
+	Name = "Auto QB Activation Delay",
+	Min = 0,
+	Max = 1,
+	Default = 0,
+	Increment = .1,
+	Suffix = "s",
+	Tip = "Delay before Auto QB moves to the football."
+})
 autoQbMethod = kO:CreateDropdown({
 	Name = "Auto QB Method",
 	Options = {
 		"Walk",
-		"Teleport"
+		"Teleport",
+		"Legit"
 	};
 	Default = "Walk",
 	Tip = "Selects how automatic positioning is performed."
 })
+local _lastAutoQbLegitJump = 0
 task.spawn(function()
 	while true do
 		repeat
@@ -7101,10 +8283,40 @@ task.spawn(function()
 				break
 			end
 			if Z:FindFirstChild("Flags") and (Z.Flags:FindFirstChild("PossessionTag") and (Z.Flags:FindFirstChild("Status") and (Z.Flags.PossessionTag.Value == vO.Team.Name and Z.Flags.Status.Value == "PrePlay"))) then
+				local delayValue = tonumber(autoQbActivationDelay.Value) or 0
+				if delayValue > 0 then
+					task.wait(delayValue)
+				end
 				if autoQbMethod.Value == "Walk" then
 					f:MoveTo(O.Position)
 				elseif autoQbMethod.Value == "Teleport" then
 					F.CFrame = O.CFrame
+				elseif autoQbMethod.Value == "Legit" then
+					if tick() - _lastAutoQbLegitJump >= 3 then
+						_lastAutoQbLegitJump = tick()
+						local gravity = workspace.Gravity
+						local startPos = F.Position
+						local targetPos = O.Position
+						local displacement = targetPos - startPos
+						local horizontal = Vector3.new(displacement.X, 0, displacement.Z)
+						local vertical = displacement.Y
+						local jumpHeight = 6
+						local timeUp = math.sqrt((2 * jumpHeight) / gravity)
+						local timeDown = math.sqrt(math.max(0, (2 * (jumpHeight - vertical)) / gravity))
+						local totalTime = timeUp + timeDown
+						if totalTime > 0 then
+							local horizontalVelocity = horizontal / totalTime
+							local verticalVelocity = math.sqrt(2 * gravity * jumpHeight)
+							f:ChangeState(Enum.HumanoidStateType.Jumping)
+							F.AssemblyLinearVelocity = Vector3.new(horizontalVelocity.X, verticalVelocity, horizontalVelocity.Z)
+							f.PlatformStand = true
+							task.delay(3, function()
+								if f then
+									f.PlatformStand = false
+								end
+							end)
+						end
+					end
 				end
 			else
 				pcall(function()
@@ -7299,10 +8511,133 @@ task.spawn(function()
 		until true
 	end
 end)
+local RO = k:CreateTab({
+	Name = "Trolling",
+	Icon = "rbxassetid://6031097225"
+})
+undergroundMode = RO:CreateToggle({
+	Name = "Enable Underground",
+	Default = false,
+	Tip = "Makes field grass/mid transparent to see underground.",
+	Callback = function(D)
+		for f, F in next, workspace:GetDescendants() do
+			if F:IsA("BasePart") and (F.Name == "Grass" or F.Name == "Mid") then
+				F.Transparency = D and .5 or 0
+				F.CanCollide = true
+			end
+		end
+	end
+})
+touchdownDance = RO:CreateToggle({
+	Name = "Touchdown Dance",
+	Default = false,
+	Tip = "Plays a dance animation on touchdown messages."
+})
+task.spawn(function()
+	local D
+	while true do
+		repeat
+			task.wait()
+			if not touchdownDance.Value then
+				if D then
+					task.delay(2, function()
+						if D then
+							D:Stop()
+							D = nil
+						end
+					end)
+				end
+				break
+			end
+			local f = vO.Character
+			if not f then
+				break
+			end
+			local F = vO:FindFirstChild("PlayerGui")
+			if not F then
+				break
+			end
+			F = F:FindFirstChild("MainGui")
+			if not F then
+				break
+			end
+			F = F:FindFirstChild("Message")
+			if not F or not F.Visible then
+				if D then
+					task.delay(2, function()
+						if D then
+							D:Stop()
+							D = nil
+						end
+					end)
+				end
+				break
+			end
+			if not f:FindFirstChildOfClass("Tool") then
+				break
+			end
+			local O = f:FindFirstChildOfClass("Humanoid")
+			if not O then
+				break
+			end
+			if F.Text and string.lower(F.Text):find("touchdown") and not D then
+				local s = Instance.new("Animation")
+				s.AnimationId = "rbxassetid://148840371"
+				D = O:LoadAnimation(s)
+				D:Play()
+			end
+		until true
+	end
+end)
 local MO = k:CreateTab({
 	Name = "Misc";
 	Icon = "rbxassetid://129082556946713"
 })
+fakeGlobalTag = MO:CreateToggle({
+	Name = "Enable Global Tag",
+	Default = false,
+	Tip = "Adds a fake global chat tag to your messages."
+})
+fakeGlobalNumber = MO:CreateTextbox({
+	Name = "Global Number",
+	Default = "7",
+	Placeholder = "Tag number...",
+	MaxLength = 8,
+	Tip = "Number shown in the fake global tag.",
+	Callback = function(D)
+		_godGlobalNum = tostring(D or "7")
+	end
+})
+fakeGlobalRole = MO:CreateTextbox({
+	Name = "Global Role",
+	Default = "QB",
+	Placeholder = "Role...",
+	MaxLength = 16,
+	Tip = "Role shown in the fake global tag.",
+	Callback = function(D)
+		_godGlobalRole = tostring(D or "QB")
+	end
+})
+_godGlobalNum = "7"
+_godGlobalRole = "QB"
+pcall(function()
+	local D = game:GetService("TextChatService")
+	if D.ChatVersion == Enum.ChatVersion.TextChatService then
+		D.OnIncomingMessage = function(f)
+			if not fakeGlobalTag.Value then
+				return
+			end
+			if f.TextSource then
+				local F = I:GetPlayerByUserId(f.TextSource.UserId)
+				if F == vO then
+					local O = Instance.new("TextChatMessageProperties")
+					O.PrefixText = "<font color='#550000'>[#" .. _godGlobalNum .. "-" .. _godGlobalRole .. "-G]</font> " .. F.DisplayName .. ":"
+					return O
+				end
+			end
+		end
+	end
+end)
 fpsCap = MO:CreateSlider({
 	Name = "Uncap FPS Amount",
 	Min = 30,
@@ -7361,6 +8696,27 @@ task.spawn(function()
 				until true
 			end
 		until true
+	end
+end)
+infiniteZoom = MO:CreateToggle({
+	Name = "Infinite Zoom",
+	Default = false,
+	Tip = "Raises camera max zoom distance while enabled.",
+	Callback = function(D)
+		if D then
+			_godOriginalZoomDistance = _godOriginalZoomDistance or vO.CameraMaxZoomDistance
+			vO.CameraMaxZoomDistance = math.max(vO.CameraMaxZoomDistance, 1000)
+		elseif _godOriginalZoomDistance then
+			vO.CameraMaxZoomDistance = _godOriginalZoomDistance
+		end
+	end
+})
+task.spawn(function()
+	while true do
+		task.wait(.5)
+		if infiniteZoom.Value then
+			vO.CameraMaxZoomDistance = math.max(vO.CameraMaxZoomDistance, 1000)
+		end
 	end
 end)
 smoothReplay = MO:CreateToggle({
@@ -7577,3 +8933,29 @@ if not l then
 		end
 	end)
 end
+
+-- // Finish load: signal that the FF3 God UI finished initializing.
+_G.FF3_UILoaded = true
+
+task.spawn(function()
+	-- Wait for the UI to actually exist before announcing it is ready.
+	local gui = h:FindFirstChild("FF3_PremiumUI")
+	local _t = 0
+	while not gui and _t < 5 do
+		task.wait(0.1)
+		_t = _t + 0.1
+		gui = h:FindFirstChild("FF3_PremiumUI")
+	end
+
+	q:Notify({
+		Title = "FF3 God",
+		Content = "Loaded successfully. Credits to " .. p .. ".",
+		Duration = 5
+	})
+
+	q:Notify({
+		Title = "Discord",
+		Content = L,
+		Duration = 6
+	})
+end)
