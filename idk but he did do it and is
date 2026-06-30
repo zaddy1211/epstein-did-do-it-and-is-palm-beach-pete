@@ -6287,6 +6287,9 @@ task.spawn(function()
 	end
 end)
 tO:CreateDivider()
+-- Forward-declare fly functions so the toggle/CharacterAdded callbacks below
+-- capture the real locals instead of looking them up as (nil) globals.
+local godStartFly, godStopFly
 enableFly = tO:CreateToggle({
 	Name = "Enable Fly",
 	Default = false,
@@ -6309,7 +6312,7 @@ flySpeed = tO:CreateSlider({
 	Tip = "Movement speed while flying."
 })
 local _flyGyro, _flyVel, _flyConn
-local function godStartFly()
+function godStartFly()
 	local D = vO.Character
 	if not D then
 		return
@@ -6360,7 +6363,7 @@ local function godStartFly()
 		_flyGyro.CFrame = F.CFrame
 	end)
 end
-function godStopFly()
+function godStopFly()  -- assigns to the forward-declared local above
 	if _flyConn then
 		_flyConn:Disconnect()
 		_flyConn = nil
@@ -6434,7 +6437,9 @@ local getGodBallHolder = function()
 	end
 	return f
 end
+do  -- scope the dive locals so they don't count against the main chunk's 200 local-register limit
 local _diveConn
+local _diveBusy = false  -- debounce: prevents overlapping dive handlers stacking up (the lag-on-dive cause)
 task.spawn(function()
 	while true do
 		repeat
@@ -6448,6 +6453,11 @@ task.spawn(function()
 			end
 			local D = vO.Character
 			if not D then
+				-- character changed/respawned: drop any stale connection so a fresh one is made
+				if _diveConn then
+					_diveConn:Disconnect()
+					_diveConn = nil
+				end
 				break
 			end
 			local f = D:FindFirstChildOfClass("Humanoid")
@@ -6462,37 +6472,49 @@ task.spawn(function()
 				if not customDiveBoost.Value or not f.PlatformStand then
 					return
 				end
-				task.wait(.05)
-				local O = HO()
-				local s = getGodBallHolder()
-				local r
-				if O then
-					r = O.Position
-				elseif s and s.Character then
-					local D = s.Character:FindFirstChild("HumanoidRootPart")
-					if D then
-						r = D.Position
-					end
+				-- Debounce: PlatformStand can flicker several times per dive; without
+				-- this guard each flicker spawned an overlapping task.wait handler that
+				-- did scans + velocity writes, piling up and causing the dive lag.
+				if _diveBusy then
+					return
 				end
-				if r then
-					local e = r - F.Position
-					local v = e.Magnitude
-					if diveAssistRadius.Value > 0 and v <= diveAssistRadius.Value and v > 0 then
-						local a = Vector3.new(e.X, 0, e.Z)
-						if a.Magnitude > 0 then
-							local D = F.AssemblyLinearVelocity
-							local f = D.Magnitude
-							if f > 0 then
-								F.AssemblyLinearVelocity = a.Unit * f
+				_diveBusy = true
+				pcall(function()
+					task.wait(.05)
+					local O = HO()
+					local s = getGodBallHolder()
+					local r
+					if O then
+						r = O.Position
+					elseif s and s.Character then
+						local D = s.Character:FindFirstChild("HumanoidRootPart")
+						if D then
+							r = D.Position
+						end
+					end
+					if r then
+						local e = r - F.Position
+						local v = e.Magnitude
+						if diveAssistRadius.Value > 0 and v <= diveAssistRadius.Value and v > 0 then
+							local a = Vector3.new(e.X, 0, e.Z)
+							if a.Magnitude > 0 then
+								local D = F.AssemblyLinearVelocity
+								local f2 = D.Magnitude
+								if f2 > 0 then
+									F.AssemblyLinearVelocity = a.Unit * f2
+								end
 							end
 						end
 					end
-				end
-				F.AssemblyLinearVelocity = F.AssemblyLinearVelocity + (f.MoveDirection * diveBoostPower.Value)
+					F.AssemblyLinearVelocity = F.AssemblyLinearVelocity + (f.MoveDirection * diveBoostPower.Value)
+				end)
+				-- always clear the debounce, even if the body above errored
+				_diveBusy = false
 			end)
 		until true
 	end
 end)
+end  -- end dive locals scope
 vO.CharacterAdded:Connect(function()
 	task.wait(.5)
 	if enableFly.Value then
@@ -6581,8 +6603,25 @@ endzoneReachValue = KO:CreateSlider({
 })
 local _endzoneOriginalSize = {}
 task.spawn(function()
+	-- Perf: only scan the workspace when Endzone Reach is actually toggled, and
+	-- throttle to 0.5s instead of running workspace:GetDescendants() every frame
+	-- (that full-map scan 60x/sec was the main source of FPS lag).
+	local _endzoneWasOn = false
 	while true do
-		task.wait()
+		task.wait(0.5)
+		if not endzoneReach.Value then
+			-- restore once when turning off, then idle without scanning
+			if _endzoneWasOn then
+				for endPart, originalSize in pairs(_endzoneOriginalSize) do
+					if endPart and endPart.Parent then
+						endPart.Size = originalSize
+					end
+				end
+				_endzoneWasOn = false
+			end
+			continue
+		end
+		_endzoneWasOn = true
 		for _, endPart in next, workspace:GetDescendants() do
 			repeat
 				if not endPart:IsA("BasePart") then
@@ -6595,12 +6634,8 @@ task.spawn(function()
 					_endzoneOriginalSize[endPart] = endPart.Size
 				end
 				local originalSize = _endzoneOriginalSize[endPart]
-				if endzoneReach.Value then
-					local zSize = endzoneReachValue.Value >= 10 and endzoneReachValue.Value or endzoneReachValue.Value / 10
-					endPart.Size = Vector3.new(originalSize.X, originalSize.Y, zSize)
-				else
-					endPart.Size = originalSize
-				end
+				local zSize = endzoneReachValue.Value >= 10 and endzoneReachValue.Value or endzoneReachValue.Value / 10
+				endPart.Size = Vector3.new(originalSize.X, originalSize.Y, zSize)
 			until true
 		end
 	end
@@ -6622,8 +6657,13 @@ antiFreeze = KO:CreateToggle({
 	Tip = "Prevents movement speed from being reduced."
 })
 task.spawn(function()
+	local _antiJamWasOn = false
 	while true do
 		task.wait()
+		-- Perf: skip the whole per-player scan when none of these are enabled.
+		if not (antiJumpCooldown.Value or antiFreeze.Value or antiJam.Value or _antiJamWasOn) then
+			continue
+		end
 		if antiJumpCooldown.Value then
 			vO.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 		end
@@ -6632,6 +6672,12 @@ task.spawn(function()
 				vO.Character.Humanoid.WalkSpeed = 20
 			end
 		end
+		-- Run the collision pass only while Anti Jam is on, plus one final restore
+		-- pass right after it's turned off (so parts don't stay non-collidable).
+		if not antiJam.Value and not _antiJamWasOn then
+			continue
+		end
+		_antiJamWasOn = antiJam.Value
 		for D, f in next, I:GetPlayers() do
 			repeat
 				if f == vO then
