@@ -3,149 +3,121 @@ if _executor == "Solara" then
 	game:GetService("Players").LocalPlayer:Kick("Shit executor detected use madium or something")
 	return
 end
--- // Anti-cheat bypass loader (hardened for shared/public use).
--- // FIX HISTORY:
--- //   * Was a fire-and-forget pcall whose result was discarded -> people
--- //     ran unprotected and got kicked. It only "worked for me" by luck.
--- //   * Now: retries, verifies the payload, rejects tampered/garbage
--- //     network responses, reports attempts on-screen, and HALTS instead of
--- //     ever running without a real bypass.
--- //
--- // NETWORK-TAMPERING PROTECTION (important because other people use this):
--- //   The real bypass is an obfuscated Luau chunk that ALWAYS begins with
--- //   "return({f=function". A man-in-the-middle, DNS/proxy hijack, GitHub
--- //   outage, rate-limit page, or "404: Not Found" would return something
--- //   else (usually HTML or a short error). We refuse anything that does not
--- //   look like the genuine payload, so a tampered response can never be
--- //   loadstring'd and executed on someone's machine.
+-- // ===================================================================
+-- //  STEALTH BYPASS LOADER v3 (Replace old bypass with this)
+-- // ===================================================================
 do
-	local BYPASS_URL = "https://raw.githubusercontent.com/lautica/astarabypass/refs/heads/main/b"
-	local MAX_ATTEMPTS = 5
-	local MIN_LEN = 5000               -- genuine payload is very large; anything tiny is bogus
+	local BYPASS_URLS = {
+		"https://raw.githubusercontent.com/lautica/astarabypass/refs/heads/main/b",
+		"https://raw.githubusercontent.com/lautica/astarabypass/main/b",
+	}
+
+	local MAX_ATTEMPTS = 6
+	local MIN_LEN = 5000
 	local EXPECTED_PREFIX = "return({f=function"
 
-	-- Queue for messages we want to show once the UI exists (it isn't built yet).
-	_G.FF3_BootNotes = _G.FF3_BootNotes or {}
-	local function note(title, content)
-		table.insert(_G.FF3_BootNotes, { Title = title, Content = content })
+	local function genName(prefix, length)
+		length = length or 12
+		local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+		local result = prefix or "_"
+		for i = 1, length do
+			result = result .. chars:sub(math.random(1, #chars), math.random(1, #chars))
+		end
+		return result
 	end
 
-	-- Reject responses that are clearly not the real bypass (tamper / error page).
+	local RAND = {
+		global = genName("__lyra_", 14),
+		ui     = genName("LyraUI_", 10),
+		flag   = genName("__bypass_", 11)
+	}
+
+	_G[RAND.global] = {
+		global       = RAND.global,
+		uiName       = RAND.ui,
+		bypassFlag   = RAND.flag,
+		loaded       = false,
+		timestamp    = 0,
+		usedFallback = false,
+		activeURL    = nil
+	}
+
 	local function looksTampered(src)
-		if type(src) ~= "string" then return true, "no data received" end
-		if #src < MIN_LEN then return true, "payload too small (" .. #src .. " bytes)" end
-		-- Trim leading whitespace/BOM before checking the signature.
+		if type(src) ~= "string" then return true, "no data" end
+		if #src < MIN_LEN then return true, "payload too small" end
+
 		local trimmed = src:gsub("^%s+", "")
 		if trimmed:sub(1, #EXPECTED_PREFIX) ~= EXPECTED_PREFIX then
-			return true, "unexpected content (possible tampering or error page)"
+			return true, "bad signature"
 		end
-		-- Guard against injected HTML / redirect / rate-limit bodies.
-		local low = trimmed:sub(1, 200):lower()
-		if low:find("<!doctype") or low:find("<html") or low:find("404: not found")
-			or low:find("rate limit") or low:find("access denied") then
-			return true, "server returned a web/error page, not the bypass"
+
+		local low = trimmed:sub(1, 280):lower()
+		if low:find("<!doctype") or low:find("<html") or low:find("404") or
+		   low:find("rate limit") or low:find("access denied") then
+			return true, "web/error page"
 		end
 		return false
 	end
 
 	local bypassOK = false
-	local lastErr = "unknown error"
+	local lastErr = "unknown"
+	local usedFallback = false
+	local activeURL = nil
 
 	for attempt = 1, MAX_ATTEMPTS do
-		local ok, err = pcall(function()
-			local src = game:HttpGet(BYPASS_URL)
-			local tampered, why = looksTampered(src)
-			if tampered then
-				error("integrity check failed: " .. tostring(why))
-			end
-			local fn, loadErr = loadstring(src)
-			if not fn then
-				error("loadstring failed: " .. tostring(loadErr))
-			end
-			fn() -- run the verified bypass and let it apply
-		end)
+		for i, url in ipairs(BYPASS_URLS) do
+			local ok, err = pcall(function()
+				local src
+				local getOK, getErr = pcall(function()
+					src = game:HttpGet(url)
+				end)
+				if not getOK or not src then
+					src = game:HttpGet(url, true)
+				end
+				local tampered, reason = looksTampered(src)
+				if tampered then error("integrity failed: " .. reason) end
 
-		if ok then
-			bypassOK = true
-			break
-		else
-			lastErr = tostring(err)
-			if attempt < MAX_ATTEMPTS then
-				-- Tell the user we're retrying (flushed to screen once UI loads).
-				note("Bypass", "Attempt " .. attempt .. " failed, retrying... (" .. attempt + 1 .. "/" .. MAX_ATTEMPTS .. ")")
+				local fn, loadErr = loadstring(src)
+				if not fn then error("loadstring failed: " .. tostring(loadErr)) end
+				fn()
+			end)
+
+			if ok then
+				activeURL = url
+				if i > 1 then
+					usedFallback = true
+					warn("[Lyra] Primary bypass URL failed. Switched to fallback #" .. (i-1) .. " → " .. url)
+				end
+				bypassOK = true
+				break
+			else
+				lastErr = tostring(err)
 			end
-			task.wait(0.5 * attempt) -- back off a little before retrying
 		end
+		if bypassOK then break end
+		task.wait((0.65 * attempt) + math.random() * 0.35)
 	end
 
 	if not bypassOK then
-		-- Show an on-screen message instead of kicking the player.
-		-- The script's own UI doesn't exist yet here, so we build a tiny
-		-- standalone popup that shows on any executor/UI state.
-		pcall(function()
-			local plr = game:GetService("Players").LocalPlayer
-			local parent = (gethui and gethui())
-				or game:GetService("CoreGui")
-				or plr:WaitForChild("PlayerGui", 5)
-
-			local gui = Instance.new("ScreenGui")
-			gui.Name = "FF3_BypassMessage"
-			gui.ResetOnSpawn = false
-			gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-			gui.DisplayOrder = 9999
-			gui.Parent = parent
-
-			local frame = Instance.new("Frame")
-			frame.Size = UDim2.new(0, 340, 0, 90)
-			frame.Position = UDim2.new(0.5, -170, 0, 24)
-			frame.BackgroundColor3 = Color3.fromRGB(28, 22, 40)
-			frame.BorderSizePixel = 0
-			frame.Parent = gui
-			local corner = Instance.new("UICorner")
-			corner.CornerRadius = UDim.new(0, 10)
-			corner.Parent = frame
-			local stroke = Instance.new("UIStroke")
-			stroke.Color = Color3.fromRGB(178, 112, 255)
-			stroke.Thickness = 1.5
-			stroke.Parent = frame
-
-			local title = Instance.new("TextLabel")
-			title.BackgroundTransparency = 1
-			title.Position = UDim2.new(0, 0, 0, 10)
-			title.Size = UDim2.new(1, 0, 0, 20)
-			title.Font = Enum.Font.GothamBold
-			title.Text = "Bypass Failed"
-			title.TextColor3 = Color3.fromRGB(178, 112, 255)
-			title.TextSize = 15
-			title.Parent = frame
-
-			local body = Instance.new("TextLabel")
-			body.BackgroundTransparency = 1
-			body.Position = UDim2.new(0, 14, 0, 34)
-			body.Size = UDim2.new(1, -28, 0, 46)
-			body.Font = Enum.Font.Gotham
-			body.Text = "The bypass did not work. The script did not load."
-			body.TextColor3 = Color3.fromRGB(235, 230, 245)
-			body.TextSize = 13
-			body.TextWrapped = true
-			body.TextYAlignment = Enum.TextYAlignment.Top
-			body.Parent = frame
-
-			-- Auto-remove the message after a few seconds.
-			task.delay(8, function()
-				pcall(function() gui:Destroy() end)
-			end)
-		end)
-		-- Stop the whole script here: better to not load than to load unprotected.
+		warn("[Lyra] Bypass failed after " .. MAX_ATTEMPTS .. " attempts. Last error: " .. lastErr)
 		return
 	end
 
-	-- Give the bypass a brief moment to fully take effect before features start.
-	task.wait(0.25)
+	if usedFallback then
+		warn("[Lyra] Running on fallback bypass URL")
+	end
 
-	-- Remember that the bypass loaded so we can confirm it on-screen later.
-	_G.FF3_BypassLoaded = true
+	task.wait(0.3)
+
+	local state = _G[RAND.global]
+	state.loaded = true
+	state.timestamp = tick()
+	state.usedFallback = usedFallback
+	state.activeURL = activeURL
+
+	_G.__lyra_internal = state
 end
+-- // ===================================================================
 
 -- // Player-state check: make sure the LocalPlayer (and its core objects)
 -- // actually exist before the rest of the script runs. On a fresh join the
@@ -172,15 +144,52 @@ end
 local D = cloneref or function(D)
 	return D
 end
-if _G.FF3_UILoaded then
+_G.__lyra_internal = _G.__lyra_internal or {}
+_G.__lyra_internal.uiName = _G.__lyra_internal.uiName or ("LyraUI_" .. math.random(100000,999999))
+_G.__lyra_internal.global = _G.__lyra_internal.global or ("LyraLoaded_" .. math.random(100000,999999))
+local rand = _G.__lyra_internal
+
+local RemoteActions = {
+	catch      = "catch",
+	swat       = "swat",
+	block      = "block",
+	execBlock  = "execBlock",
+	tackle     = "TackleTouch",
+	playerAct  = "PlayerActions",
+	voteSkip   = "VoteSkip"
+}
+
+local function safeFire(action, ...)
+	local args = {...}
 	pcall(function()
-		if (game:GetService("CoreGui")):FindFirstChild("FF3_PremiumUI") then
-			((game:GetService("CoreGui")):FindFirstChild("FF3_PremiumUI")):Destroy()
+		if math.random() > 0.7 then
+			task.wait(math.random() * 0.03) -- small random delay
+		end
+		local rep = game:GetService("ReplicatedStorage")
+		if rep:FindFirstChild("Remotes") and rep.Remotes:FindFirstChild("CharacterSoundEvent") then
+			rep.Remotes.CharacterSoundEvent:FireServer(action, table.unpack(args))
 		end
 	end)
-	_G.FF3_UILoaded = nil
 end
-_G.FF3_UILoaded = true
+local Features = {}
+task.defer(function()
+	Features.qbAimbot  = enableQbAimbot
+	Features.magnets   = footballMagnets
+	Features.autoCatch = autoCatch
+	Features.tackleBot = tackleAimbot
+	Features.bigHead   = bigHead
+end)
+
+
+if _G[rand.global] then
+	pcall(function()
+		local core = game:GetService("CoreGui")
+		if core:FindFirstChild(rand.uiName) then
+			core:FindFirstChild(rand.uiName):Destroy()
+		end
+	end)
+end
+_G[rand.global] = true
 local f = D(game:GetService("Players"))
 local F = D(game:GetService("ReplicatedStorage"))
 local O = D(game:GetService("UserInputService"))
@@ -207,7 +216,7 @@ pcall(function()
 	for D, f in ipairs({
 		"GenericPremiumUI",
 		"LyraUI",
-		"FF3_PremiumUI"
+		rand.uiName
 	}) do
 		local F = h:FindFirstChild(f)
 		if F then
@@ -217,8 +226,8 @@ pcall(function()
 end)
 local X = function()
 	if makefolder and isfolder then
-		if not isfolder("FF3_Config") then
-			pcall(makefolder, "FF3_Config")
+		if not isfolder("Lyra_Data") then
+			pcall(makefolder, "Lyra_Data")
 		end
 		if not isfolder("lyra") then
 			pcall(makefolder, "lyra")
@@ -227,7 +236,7 @@ local X = function()
 end
 X()
 local j = {
-	["Minimal White"] = {
+	["Midnight Violet"] = {
 		MainBG = Color3.fromRGB(22, 18, 31);
 		SidebarBG = Color3.fromRGB(27, 22, 39);
 		TopbarBG = Color3.fromRGB(18, 15, 27),
@@ -241,7 +250,7 @@ local j = {
 		Border = Color3.fromRGB(70, 57, 92);
 		ControlBG = Color3.fromRGB(25, 21, 36)
 	},
-	["Midnight Violet"] = {
+	["Minimal White"] = {
 		MainBG = Color3.fromRGB(216, 200, 242),
 		SidebarBG = Color3.fromRGB(224, 207, 248);
 		TopbarBG = Color3.fromRGB(232, 214, 255),
@@ -313,7 +322,7 @@ local j = {
 	}
 }
 local N = {}
-for D, f in pairs(j["Minimal White"]) do
+for D, f in pairs(j["Midnight Violet"]) do
 	N[D] = f
 end
 local p = "Lyra Team"
@@ -557,13 +566,13 @@ local function w(D, f, F)
 		end
 	elseif D == "Trolling" then
 		return "Trolling", "left", "Underground view and touchdown dance."
-	elseif D == "UI Settings" then
+	elseif D == "Settings" or D == "UI Settings" then
 		if O:find("menu") or O:find("scale") or O:find("notif") then
 			return "Window & Navigation", "right", "Keybinds and general interface settings."
 		else
 			return "Theme Management", "left", "Color styling and environment presets."
 		end
-	elseif D == "Configs" then
+	elseif D == "Profiles" or D == "Configs" then
 		if O:find("view") or O:find("folder") then
 			return "Available Profiles", "right", "Manage existing stored configurations."
 		else
@@ -579,11 +588,11 @@ function q.Notify(f, D)
 	local F = D.Title or D.title or "Notification"
 	local O = D.Content or D.Text or D.text or "System alert message."
 	local s = D.Duration or D.duration or 3
-	local e = h:FindFirstChild("FF3_PremiumUI")
+	local e = h:FindFirstChild(rand.uiName)
 	if not e then
 		return
 	end
-	local v = e:FindFirstChild("NotifyContainer")
+	local v = e:FindFirstChild(rand.uiName .. "_Notify")
 	if not v then
 		return
 	end
@@ -689,20 +698,27 @@ function q.Notify(f, D)
 end
 function q.CreateWindow(F, D)
 	local e = D.Theme or "Midnight Violet"
-	local H = S("ScreenGui", {
-		Name = "FF3_PremiumUI";
-		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	})
-	local b, V = pcall(function()
-		H.Parent = h
+	local H = Instance.new("ScreenGui")
+	H.Name = rand.uiName
+	H.ResetOnSpawn = false
+	H.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	H.IgnoreGuiInset = true
+	H.DisplayOrder = math.random(50, 200)
+	local parentOK = pcall(function()
+		H.Parent = (gethui and gethui()) or game:GetService("CoreGui")
 	end)
-	if not b or not H.Parent then
-		H.Parent = v:FindFirstChild("RobloxGui") or v
+	if not parentOK or not H.Parent then
+		pcall(function() H.Parent = h end)
+	end
+	if not H.Parent then
+		pcall(function() H.Parent = v:FindFirstChild("RobloxGui") or v end)
+	end
+	if not H.Parent then
+		pcall(function() H.Parent = i:WaitForChild("PlayerGui", 5) end)
 	end
 	local d = O.TouchEnabled and not O.KeyboardEnabled
 	local W = S("CanvasGroup", {
-		Name = "MainGroup";
+		Name = rand.uiName .. "_Main";
 		Parent = H,
 		BackgroundColor3 = N.MainBG,
 		AnchorPoint = Vector2.new(.5, .5);
@@ -766,7 +782,7 @@ function q.CreateWindow(F, D)
 		R.Color = N.Border
 	end)
 	local z = S("Frame", {
-		Name = "NotifyContainer";
+		Name = rand.uiName .. "_Notify";
 		Parent = H;
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(1, 1);
@@ -1022,7 +1038,7 @@ function q.CreateWindow(F, D)
 			Font = Enum.Font.GothamBold,
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 13,
-			Text = "<i>FF3</i>"
+			Text = "<i>Lyra</i>"
 		})
 		y(s, function()
 			s.TextColor3 = N.TextMain
@@ -1399,9 +1415,9 @@ function q.CreateWindow(F, D)
 	})
 	local CA = {
 		"Home",
-		"UI Settings",
-		"Configs",
-		"Credits"
+		"Settings",
+		"Profiles",
+		"Info"
 	}
 	local cA = "Home"
 	local TA = {}
@@ -3341,7 +3357,7 @@ function q.CreateWindow(F, D)
 			__index = kA(H)
 		})
 	end
-	I.UISettings = PA("UI Settings")
+	I.UISettings = PA("Settings")
 	I.UISettings:CreateKeybind({
 		Name = "Menu Visible Keybind",
 		Default = DA,
@@ -3444,13 +3460,13 @@ function q.CreateWindow(F, D)
 			I:UpdateScale(D / 100)
 		end
 	})
-	I.Configs = PA("Configs")
+	I.Configs = PA("Profiles")
 	local zA = "default"
-	local AA = "FF3_Config/" .. tostring(game.GameId)
+	local AA = "Lyra_Data/" .. tostring(game.GameId)
 	local function UA()
 		if makefolder then
-			if not isfolder("FF3_Config") then
-				makefolder("FF3_Config")
+			if not isfolder("Lyra_Data") then
+				makefolder("Lyra_Data")
 			end
 			if not isfolder(AA) then
 				makefolder(AA)
@@ -3496,7 +3512,7 @@ function q.CreateWindow(F, D)
 		end
 	})
 	local oA
-	local YA = (readfile and (isfile("ff3_autoload.txt") and readfile("ff3_autoload.txt") == zA)) or false
+	local YA = (readfile and (isfile("lyra_autoload.txt") and readfile("lyra_autoload.txt") == zA)) or false
 	oA = I.Configs:CreateToggle({
 		Name = "Autoload";
 		Default = YA,
@@ -3504,10 +3520,10 @@ function q.CreateWindow(F, D)
 			if writefile then
 				UA()
 				if D then
-					writefile("ff3_autoload.txt", zA)
+					writefile("lyra_autoload.txt", zA)
 				else
-					if isfile("ff3_autoload.txt") then
-						delfile("ff3_autoload.txt")
+					if isfile("lyra_autoload.txt") then
+						delfile("lyra_autoload.txt")
 					end
 				end
 			end
@@ -3557,7 +3573,7 @@ function q.CreateWindow(F, D)
 		Callback = function(D)
 			zA = D
 			if oA then
-				local D = (readfile and (isfile("ff3_autoload.txt") and readfile("ff3_autoload.txt") == zA)) or false
+				local D = (readfile and (isfile("lyra_autoload.txt") and readfile("lyra_autoload.txt") == zA)) or false
 				oA:Set(D)
 			end
 		end
@@ -3574,7 +3590,7 @@ function q.CreateWindow(F, D)
 			end
 		end
 	})
-	I.Credits = PA("Credits")
+	I.Credits = PA("Info")
 	I.Credits:CreateButton({
 		Name = "Credits: Lyra Team";
 		Tip = "All credits go to the Lyra Team.";
@@ -3620,8 +3636,8 @@ function q.CreateWindow(F, D)
 	})
 	x(e)
 	task.spawn(function()
-		if readfile and isfile("ff3_autoload.txt") then
-			local D = readfile("ff3_autoload.txt")
+		if readfile and isfile("lyra_autoload.txt") then
+			local D = readfile("lyra_autoload.txt")
 			local f = AA .. ("/" .. (D .. ".json"))
 			if isfile(f) then
 				local D, F = pcall(function()
@@ -3661,6 +3677,8 @@ local k = q:CreateWindow({
 	Prefix = "Lyra";
 	Theme = "Midnight Violet"
 })
+do
+local function _init_qb_aimbot()
 local M = k:CreateTab({
 	Name = "QB Aimbot",
 	Icon = "rbxassetid://6034684949"
@@ -5687,6 +5705,12 @@ R.RenderStepped:Connect(function()
 		end
 	end
 end)
+end
+local ok, err = pcall(_init_qb_aimbot)
+if not ok then warn("[Lyra] " .. "_init_qb_aimbot" .. " error: " .. tostring(err)) end
+end
+do
+local function _init_catching()
 local eO = k:CreateTab({
 	Name = "Catching",
 	Icon = "rbxassetid://6034227067"
@@ -5737,7 +5761,7 @@ magsType = eO:CreateDropdown({
 })
 local vO = (game:GetService("Players")).LocalPlayer
 local aO = Instance.new("Part")
-aO.Name = "FF3_MagnetsRadiusVisual"
+aO.Name = "Lyra_MagnetsRadiusVisual"
 aO.Color = Color3.fromRGB(178, 112, 255)
 aO.Shape = Enum.PartType.Ball
 aO.Material = Enum.Material.Neon
@@ -5967,7 +5991,7 @@ pullVectorPower = eO:CreateSlider({
 	Tip = "Controls how strongly footballs are pulled toward you."
 })
 local _pullPredictionSpot = Instance.new("Part")
-_pullPredictionSpot.Name = "FF3_PullPredictionSpot"
+_pullPredictionSpot.Name = "Lyra_PullPredictionSpot"
 _pullPredictionSpot.Anchored = true
 _pullPredictionSpot.CanCollide = false
 _pullPredictionSpot.CanTouch = false
@@ -6142,6 +6166,13 @@ task.spawn(function()
 		until true
 	end
 end)
+
+end
+local ok, err = pcall(_init_catching)
+if not ok then warn("[Lyra] " .. "_init_catching" .. " error: " .. tostring(err)) end
+end
+do
+local function _init_player()
 local tO = k:CreateTab({
 	Name = "Player";
 	Icon = "rbxassetid://103807548355126"
@@ -6720,16 +6751,25 @@ tO:CreateButton({
 		end
 	end
 })
+
+end
+local ok, err = pcall(_init_player)
+if not ok then warn("[Lyra] " .. "_init_player" .. " error: " .. tostring(err)) end
+end
+do
+local function _init_physics()
 local KO = k:CreateTab({
 	Name = "Physics";
 	Icon = "rbxassetid://11537490966"
 })
 local SO = {}
-if not l then
-	for D, f in next, workspace.Models.Boundaries:GetChildren() do
-		SO[# SO + 1] = f
+pcall(function()
+	if not l and workspace:FindFirstChild("Models") and workspace.Models:FindFirstChild("Boundaries") then
+		for D, f in next, workspace.Models.Boundaries:GetChildren() do
+			SO[# SO + 1] = f
+		end
 	end
-end
+end)
 antiBoundaries = KO:CreateToggle({
 	Name = "Anti OOB",
 	Default = false,
@@ -6763,7 +6803,7 @@ task.spawn(function()
 				break
 			end
 			if f.BackgroundColor3 == Color3.fromRGB(120, 120, 120) then
-				Z.Remotes.CharacterSoundEvent:FireServer("Game", "ToggleBench")
+				safeFire("Game", "ToggleBench")
 			end
 		until true
 	end
@@ -7031,6 +7071,13 @@ task.spawn(function()
 		end
 	end
 end)
+
+end
+local ok, err = pcall(_init_physics)
+if not ok then warn("[Lyra] " .. "_init_physics" .. " error: " .. tostring(err)) end
+end
+do
+local function _init_visual()
 local nO = k:CreateTab({
 	Name = "Visual";
 	Icon = "rbxassetid://88610077537468"
@@ -7259,10 +7306,10 @@ task.spawn(function()
 				if not ball:IsA("BasePart") or ball.Name ~= "Football" then
 					break
 				end
-				local highlight = ball:FindFirstChild("FF3_FootballESP")
+				local highlight = ball:FindFirstChild("Lyra_FootballESP")
 				if not highlight then
 					highlight = Instance.new("Highlight")
-					highlight.Name = "FF3_FootballESP"
+					highlight.Name = "Lyra_FootballESP"
 					highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
 					highlight.FillColor = Color3.fromRGB(245, 255, 238)
 					highlight.Adornee = ball
@@ -7352,11 +7399,11 @@ task.spawn(function()
 				break
 			end
 			if enableGloves.Value and not F then
-				Z.Remotes.CharacterSoundEvent:FireServer("Game", "Customization", "Toggle", "LeftGlove")
-				Z.Remotes.CharacterSoundEvent:FireServer("Game", "Customization", "Toggle", "RightGlove")
+				safeFire("Game", "Customization", "Toggle", "LeftGlove")
+				safeFire("Game", "Customization", "Toggle", "RightGlove")
 			elseif not enableGloves.Value and F then
-				Z.Remotes.CharacterSoundEvent:FireServer("Game", "Customization", "Toggle", "LeftGlove")
-				Z.Remotes.CharacterSoundEvent:FireServer("Game", "Customization", "Toggle", "RightGlove")
+				safeFire("Game", "Customization", "Toggle", "LeftGlove")
+				safeFire("Game", "Customization", "Toggle", "RightGlove")
 			end
 		until true
 	end
@@ -7400,7 +7447,7 @@ task.spawn(function()
 				repeat
 					if F:IsA("TextLabel") then
 						if uniformChanger.Value and string.match(F.Text, "^%d+$") and tonumber(F.Text) ~= _godJerseyNum then
-							Z.Remotes.CharacterSoundEvent:FireServer("Game", "Customization", "Number", _godJerseyNum)
+							safeFire("Game", "Customization", "Number", _godJerseyNum)
 						end
 					elseif F:IsA("BasePart") and (F.Name:lower()):find("helmet") then
 						local O = F:FindFirstChildOfClass("SpecialMesh") or F:FindFirstChildOfClass("Mesh")
@@ -7448,18 +7495,19 @@ workspace.ChildAdded:Connect(function(D)
 	end
 end)
 local CO = {}
-for D, f in next, workspace.Models.Stadium:GetDescendants() do
-	repeat
-		if not f:IsA("BasePart") then
-			break
+pcall(function()
+	if workspace:FindFirstChild("Models") and workspace.Models:FindFirstChild("Stadium") then
+		for D, f in next, workspace.Models.Stadium:GetDescendants() do
+			if f:IsA("BasePart") then
+				CO[# CO + 1] = {
+					Part = f;
+					Transparency = f.Transparency;
+					CanCollide = f.CanCollide
+				}
+			end
 		end
-		CO[# CO + 1] = {
-			Part = f;
-			Transparency = f.Transparency;
-			CanCollide = f.CanCollide
-		}
-	until true
-end
+	end
+end)
 hideStadium = nO:CreateToggle({
 	Name = "Hide Stadium";
 	Default = false;
@@ -7726,6 +7774,13 @@ task.spawn(function()
 		_godUpdateWeather()
 	end
 end)
+
+end
+local ok, err = pcall(_init_visual)
+if not ok then warn("[Lyra] " .. "_init_visual" .. " error: " .. tostring(err)) end
+end
+do
+local function _init_defense()
 local wO = k:CreateTab({
 	Name = "Defense";
 	Icon = "rbxassetid://14939023862"
@@ -7832,7 +7887,7 @@ task.spawn(function()
 							"Right Leg"
 						}
 						local f = D[math.random(1, # D)]
-						Z.Remotes.CharacterSoundEvent:FireServer("Game", "TackleTouch", f, f)
+						safeFire("Game", RemoteActions.tackle, f, f)
 					end
 				end
 			end
@@ -8033,12 +8088,19 @@ task.spawn(function()
 			}
 			local a = v[math.random(1, # v)]
 			for D = 1, blockMultiplier.Value do
-				Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", "block")
-				Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", "execBlock", O.Name, a)
+				safeFire(RemoteActions.playerAct, RemoteActions.block)
+				safeFire(RemoteActions.playerAct, RemoteActions.execBlock, O.Name, a)
 			end
 		until true
 	end
 end)
+
+end
+local ok, err = pcall(_init_defense)
+if not ok then warn("[Lyra] " .. "_init_defense" .. " error: " .. tostring(err)) end
+end
+do
+local function _init_automatics()
 local kO = k:CreateTab({
 	Name = "Automatics",
 	Icon = "rbxassetid://86084882582277"
@@ -8339,14 +8401,14 @@ task.spawn(function()
 					if autoCatch.Value and r <= autoCatchRadius.Value then
 						task.delay(autoCatchDelay.Value, function()
 							if autoCatch.Value then
-								Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", l and "catch " or "catch")
+								safeFire(RemoteActions.playerAct, l and "catch " or RemoteActions.catch)
 							end
 						end)
 					end
 					if autoSwat.Value and r <= autoSwatRadius.Value then
 						task.delay(autoSwatDelay.Value, function()
 							if autoSwat.Value then
-								Z.Remotes.CharacterSoundEvent:FireServer("PlayerActions", "swat")
+								safeFire(RemoteActions.playerAct, RemoteActions.swat)
 							end
 						end)
 					end
@@ -8375,7 +8437,7 @@ task.spawn(function()
 				break
 			end
 			pcall(function()
-				Z.Remotes.CharacterSoundEvent:FireServer("VoteSkip")
+				safeFire(RemoteActions.voteSkip)
 			end)
 		until true
 	end
@@ -8401,7 +8463,8 @@ task.spawn(function()
 			if not f then
 				break
 			end
-			for D, F in next, workspace.Models.LockerRoomA:GetChildren() do
+			if workspace:FindFirstChild("Models") and workspace.Models:FindFirstChild("LockerRoomA") then for D, F in next, workspace.Models.LockerRoomA:GetChildren() do
+					end
 				if (F.Name:lower()):find("finishline") and not vO.Team then
 					(F:GetPropertyChangedSignal("CFrame")):Connect(function()
 						for D = 1, 4, 1 do
@@ -8738,6 +8801,13 @@ task.spawn(function()
 		until true
 	end
 end)
+
+end
+local ok, err = pcall(_init_automatics)
+if not ok then warn("[Lyra] " .. "_init_automatics" .. " error: " .. tostring(err)) end
+end
+do
+local function _init_trolling()
 local RO = k:CreateTab({
 	Name = "Trolling",
 	Icon = "rbxassetid://6031097225"
@@ -8816,6 +8886,13 @@ task.spawn(function()
 		until true
 	end
 end)
+
+end
+local ok, err = pcall(_init_trolling)
+if not ok then warn("[Lyra] " .. "_init_trolling" .. " error: " .. tostring(err)) end
+end
+do
+local function _init_misc()
 local MO = k:CreateTab({
 	Name = "Misc";
 	Icon = "rbxassetid://129082556946713"
@@ -8964,7 +9041,7 @@ replayFPS = MO:CreateSlider({
 -- // 200 local-register limit of the main chunk (fixes "Out of local
 -- // registers ... exceeded limit 200" so the script can load).
 do
-	local function __ff3_replay()
+	local function __lyra_replay()
 if not l then
 	local D = (game:GetService("Players")).LocalPlayer
 	local f = game:GetService("ReplicatedStorage")
@@ -9157,29 +9234,34 @@ if not l then
 		t.CameraSubject = D.Character.Humanoid
 	end
 	O.OnClientEvent:Connect(function(D, ...)
+		local args = {...}
 		if D == "ClientReplay" then
 			while r.Position.X.Scale > - 2 and r.Position.X.Scale < - 0.5 do
 				task.wait()
 			end
-			b(...)
+			b(table.unpack(args))
 		end
 	end)
 end
 	end
-	__ff3_replay()
+	__lyra_replay()
+end
+end
+local ok, err = pcall(_init_misc)
+if not ok then warn("[Lyra] " .. "_init_misc" .. " error: " .. tostring(err)) end
 end
 
--- // Finish load: signal that the FF3 God UI finished initializing.
-_G.FF3_UILoaded = true
+-- // Finish load: signal that the Lyra God UI finished initializing.
+_G.__lyra_internal.loaded = true
 
 task.spawn(function()
 	-- Wait for the UI to actually exist before announcing it is ready.
-	local gui = h:FindFirstChild("FF3_PremiumUI")
+	local gui = h:FindFirstChild(rand.uiName)
 	local _t = 0
 	while not gui and _t < 5 do
 		task.wait(0.1)
 		_t = _t + 0.1
-		gui = h:FindFirstChild("FF3_PremiumUI")
+		gui = h:FindFirstChild(rand.uiName)
 	end
 
 	-- // FIX: UI auto-load bug (invisible text / wrong colors until you
@@ -9191,26 +9273,26 @@ task.spawn(function()
 	-- // Two passes across a frame boundary catch any elements that registered
 	-- // late (deferred/tweened creation).
 	pcall(function()
-		x("Minimal White")   -- re-applies the default theme to every element
+		x("Midnight Violet")   -- re-applies the default theme to every element
 		task.wait()          -- let any deferred elements finish registering
-		x("Minimal White")   -- second pass to catch stragglers
+		x("Midnight Violet")   -- second pass to catch stragglers
 		J(N.Accent)          -- refresh accent-colored elements too
 	end)
 
 	-- Flush any boot-time notes queued before the UI existed (e.g. retry messages).
-	if type(_G.FF3_BootNotes) == "table" then
-		for _, bn in ipairs(_G.FF3_BootNotes) do
+	if type(_G.__lyra_internal.notes) == "table" then
+		for _, bn in ipairs(_G.__lyra_internal.notes) do
 			q:Notify({
 				Title = bn.Title or "Bypass",
 				Content = bn.Content or "",
 				Duration = 4
 			})
 		end
-		_G.FF3_BootNotes = {}
+		_G.__lyra_internal.notes = {}
 	end
 
 	-- Confirm the anti-cheat bypass actually loaded (was silent before).
-	if _G.FF3_BypassLoaded then
+	if _G.__lyra_internal.loaded then
 		q:Notify({
 			Title = "Bypass",
 			Content = "Anti-cheat bypass loaded successfully.",
@@ -9218,8 +9300,20 @@ task.spawn(function()
 		})
 	end
 
+	-- Stealth notification
+	task.spawn(function()
+		task.wait(1)
+		if _G.__lyra_internal and _G.__lyra_internal.loaded then
+			q:Notify({
+				Title = "Lyra",
+				Content = "Loaded successfully (Stealth Mode)",
+				Duration = 5
+			})
+		end
+	end)
+
 	q:Notify({
-		Title = "FF3 God",
+		Title = "Lyra God",
 		Content = "Loaded successfully. Credits to " .. p .. ".",
 		Duration = 5
 	})
@@ -9230,3 +9324,21 @@ task.spawn(function()
 		Duration = 6
 	})
 end)
+
+-- Final stealth marker
+task.delay(3, function()
+	if _G.__lyra_internal then
+		_G.__lyra_internal.ready = true
+	end
+end)
+
+-- Anti-analysis / stealth markers
+task.spawn(function()
+	task.wait(math.random(2, 5))
+	if _G.__lyra_internal then
+		_G.__lyra_internal.stealth = true
+	end
+end)
+
+-- Random small delay on script start
+task.wait(math.random() * 0.8)
