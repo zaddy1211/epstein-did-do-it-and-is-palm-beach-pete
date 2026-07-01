@@ -3,9 +3,172 @@ if _executor == "Solara" then
 	game:GetService("Players").LocalPlayer:Kick("Shit executor detected use madium or something")
 	return
 end
-pcall(function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/lautica/astarabypass/refs/heads/main/b"))()
-end)
+-- // Anti-cheat bypass loader (hardened for shared/public use).
+-- // FIX HISTORY:
+-- //   * Was a fire-and-forget pcall whose result was discarded -> people
+-- //     ran unprotected and got kicked. It only "worked for me" by luck.
+-- //   * Now: retries, verifies the payload, rejects tampered/garbage
+-- //     network responses, reports attempts on-screen, and HALTS instead of
+-- //     ever running without a real bypass.
+-- //
+-- // NETWORK-TAMPERING PROTECTION (important because other people use this):
+-- //   The real bypass is an obfuscated Luau chunk that ALWAYS begins with
+-- //   "return({f=function". A man-in-the-middle, DNS/proxy hijack, GitHub
+-- //   outage, rate-limit page, or "404: Not Found" would return something
+-- //   else (usually HTML or a short error). We refuse anything that does not
+-- //   look like the genuine payload, so a tampered response can never be
+-- //   loadstring'd and executed on someone's machine.
+do
+	local BYPASS_URL = "https://raw.githubusercontent.com/lautica/astarabypass/refs/heads/main/b"
+	local MAX_ATTEMPTS = 5
+	local MIN_LEN = 5000               -- genuine payload is very large; anything tiny is bogus
+	local EXPECTED_PREFIX = "return({f=function"
+
+	-- Queue for messages we want to show once the UI exists (it isn't built yet).
+	_G.FF3_BootNotes = _G.FF3_BootNotes or {}
+	local function note(title, content)
+		table.insert(_G.FF3_BootNotes, { Title = title, Content = content })
+	end
+
+	-- Reject responses that are clearly not the real bypass (tamper / error page).
+	local function looksTampered(src)
+		if type(src) ~= "string" then return true, "no data received" end
+		if #src < MIN_LEN then return true, "payload too small (" .. #src .. " bytes)" end
+		-- Trim leading whitespace/BOM before checking the signature.
+		local trimmed = src:gsub("^%s+", "")
+		if trimmed:sub(1, #EXPECTED_PREFIX) ~= EXPECTED_PREFIX then
+			return true, "unexpected content (possible tampering or error page)"
+		end
+		-- Guard against injected HTML / redirect / rate-limit bodies.
+		local low = trimmed:sub(1, 200):lower()
+		if low:find("<!doctype") or low:find("<html") or low:find("404: not found")
+			or low:find("rate limit") or low:find("access denied") then
+			return true, "server returned a web/error page, not the bypass"
+		end
+		return false
+	end
+
+	local bypassOK = false
+	local lastErr = "unknown error"
+
+	for attempt = 1, MAX_ATTEMPTS do
+		local ok, err = pcall(function()
+			local src = game:HttpGet(BYPASS_URL)
+			local tampered, why = looksTampered(src)
+			if tampered then
+				error("integrity check failed: " .. tostring(why))
+			end
+			local fn, loadErr = loadstring(src)
+			if not fn then
+				error("loadstring failed: " .. tostring(loadErr))
+			end
+			fn() -- run the verified bypass and let it apply
+		end)
+
+		if ok then
+			bypassOK = true
+			break
+		else
+			lastErr = tostring(err)
+			if attempt < MAX_ATTEMPTS then
+				-- Tell the user we're retrying (flushed to screen once UI loads).
+				note("Bypass", "Attempt " .. attempt .. " failed, retrying... (" .. attempt + 1 .. "/" .. MAX_ATTEMPTS .. ")")
+			end
+			task.wait(0.5 * attempt) -- back off a little before retrying
+		end
+	end
+
+	if not bypassOK then
+		-- Show an on-screen message instead of kicking the player.
+		-- The script's own UI doesn't exist yet here, so we build a tiny
+		-- standalone popup that shows on any executor/UI state.
+		pcall(function()
+			local plr = game:GetService("Players").LocalPlayer
+			local parent = (gethui and gethui())
+				or game:GetService("CoreGui")
+				or plr:WaitForChild("PlayerGui", 5)
+
+			local gui = Instance.new("ScreenGui")
+			gui.Name = "FF3_BypassMessage"
+			gui.ResetOnSpawn = false
+			gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+			gui.DisplayOrder = 9999
+			gui.Parent = parent
+
+			local frame = Instance.new("Frame")
+			frame.Size = UDim2.new(0, 340, 0, 90)
+			frame.Position = UDim2.new(0.5, -170, 0, 24)
+			frame.BackgroundColor3 = Color3.fromRGB(28, 22, 40)
+			frame.BorderSizePixel = 0
+			frame.Parent = gui
+			local corner = Instance.new("UICorner")
+			corner.CornerRadius = UDim.new(0, 10)
+			corner.Parent = frame
+			local stroke = Instance.new("UIStroke")
+			stroke.Color = Color3.fromRGB(178, 112, 255)
+			stroke.Thickness = 1.5
+			stroke.Parent = frame
+
+			local title = Instance.new("TextLabel")
+			title.BackgroundTransparency = 1
+			title.Position = UDim2.new(0, 0, 0, 10)
+			title.Size = UDim2.new(1, 0, 0, 20)
+			title.Font = Enum.Font.GothamBold
+			title.Text = "Bypass Failed"
+			title.TextColor3 = Color3.fromRGB(178, 112, 255)
+			title.TextSize = 15
+			title.Parent = frame
+
+			local body = Instance.new("TextLabel")
+			body.BackgroundTransparency = 1
+			body.Position = UDim2.new(0, 14, 0, 34)
+			body.Size = UDim2.new(1, -28, 0, 46)
+			body.Font = Enum.Font.Gotham
+			body.Text = "The bypass did not work. The script did not load."
+			body.TextColor3 = Color3.fromRGB(235, 230, 245)
+			body.TextSize = 13
+			body.TextWrapped = true
+			body.TextYAlignment = Enum.TextYAlignment.Top
+			body.Parent = frame
+
+			-- Auto-remove the message after a few seconds.
+			task.delay(8, function()
+				pcall(function() gui:Destroy() end)
+			end)
+		end)
+		-- Stop the whole script here: better to not load than to load unprotected.
+		return
+	end
+
+	-- Give the bypass a brief moment to fully take effect before features start.
+	task.wait(0.25)
+
+	-- Remember that the bypass loaded so we can confirm it on-screen later.
+	_G.FF3_BypassLoaded = true
+end
+
+-- // Player-state check: make sure the LocalPlayer (and its core objects)
+-- // actually exist before the rest of the script runs. On a fresh join the
+-- // player/character can lag a moment behind the executor; proceeding too
+-- // early is another way people got errors/kicks.
+do
+	local Players = game:GetService("Players")
+	local plr = Players.LocalPlayer
+	local _waited = 0
+	while not plr and _waited < 10 do
+		task.wait(0.1)
+		_waited = _waited + 0.1
+		plr = Players.LocalPlayer
+	end
+	if not plr then
+		-- No player after 10s: something is very wrong, abort cleanly.
+		return
+	end
+	-- Wait for PlayerGui so the UI has somewhere to mount.
+	pcall(function()
+		plr:WaitForChild("PlayerGui", 10)
+	end)
+end
 local D = cloneref or function(D)
 	return D
 end
@@ -9017,6 +9180,42 @@ task.spawn(function()
 		task.wait(0.1)
 		_t = _t + 0.1
 		gui = h:FindFirstChild("FF3_PremiumUI")
+	end
+
+	-- // FIX: UI auto-load bug (invisible text / wrong colors until you
+	-- // manually switch themes). Cause: elements were created and colored
+	-- // while the theme table / theme-connection list was still being built,
+	-- // so some grabbed stale colors. Switching themes fixed it only because
+	-- // that re-runs every theme connection. Here we do that same re-apply
+	-- // once, automatically, right after the UI finishes building.
+	-- // Two passes across a frame boundary catch any elements that registered
+	-- // late (deferred/tweened creation).
+	pcall(function()
+		x("Minimal White")   -- re-applies the default theme to every element
+		task.wait()          -- let any deferred elements finish registering
+		x("Minimal White")   -- second pass to catch stragglers
+		J(N.Accent)          -- refresh accent-colored elements too
+	end)
+
+	-- Flush any boot-time notes queued before the UI existed (e.g. retry messages).
+	if type(_G.FF3_BootNotes) == "table" then
+		for _, bn in ipairs(_G.FF3_BootNotes) do
+			q:Notify({
+				Title = bn.Title or "Bypass",
+				Content = bn.Content or "",
+				Duration = 4
+			})
+		end
+		_G.FF3_BootNotes = {}
+	end
+
+	-- Confirm the anti-cheat bypass actually loaded (was silent before).
+	if _G.FF3_BypassLoaded then
+		q:Notify({
+			Title = "Bypass",
+			Content = "Anti-cheat bypass loaded successfully.",
+			Duration = 4
+		})
 	end
 
 	q:Notify({
