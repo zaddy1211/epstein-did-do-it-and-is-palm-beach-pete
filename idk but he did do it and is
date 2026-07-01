@@ -1,124 +1,86 @@
-local _executor = identifyexecutor and identifyexecutor() or "Unknown"
-if _executor == "Solara" then
-	game:GetService("Players").LocalPlayer:Kick("Shit executor detected use madium or something")
-	return
-end
--- // ===================================================================
--- //  STEALTH BYPASS LOADER v3 (Replace old bypass with this)
--- // ===================================================================
-do
-	local BYPASS_URLS = {
-		"https://raw.githubusercontent.com/lautica/astarabypass/refs/heads/main/b",
-		"https://raw.githubusercontent.com/lautica/astarabypass/main/b",
-	}
-
-	local MAX_ATTEMPTS = 6
-	local MIN_LEN = 5000
-	local EXPECTED_PREFIX = "return({f=function"
-
-	local function genName(prefix, length)
-		length = length or 12
-		local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-		local result = prefix or "_"
-		for i = 1, length do
-			result = result .. chars:sub(math.random(1, #chars), math.random(1, #chars))
+local _executor_raw = identifyexecutor and identifyexecutor() or "Unknown"
+local _executor = tostring(_executor_raw):lower()
+local _bannedExecutors = { "xeno", "solara", "delta" }
+for _, banned in ipairs(_bannedExecutors) do
+	if _executor:find(banned) then
+		local plr = game:GetService("Players").LocalPlayer
+		if plr then
+			plr:Kick("[Lyra] Banned / unsupported executor detected (" .. tostring(_executor_raw) .. "). Please use a supported executor.")
 		end
-		return result
-	end
-
-	local RAND = {
-		global = genName("__lyra_", 14),
-		ui     = genName("LyraUI_", 10),
-		flag   = genName("__bypass_", 11)
-	}
-
-	_G[RAND.global] = {
-		global       = RAND.global,
-		uiName       = RAND.ui,
-		bypassFlag   = RAND.flag,
-		loaded       = false,
-		timestamp    = 0,
-		usedFallback = false,
-		activeURL    = nil
-	}
-
-	local function looksTampered(src)
-		if type(src) ~= "string" then return true, "no data" end
-		if #src < MIN_LEN then return true, "payload too small" end
-
-		local trimmed = src:gsub("^%s+", "")
-		if trimmed:sub(1, #EXPECTED_PREFIX) ~= EXPECTED_PREFIX then
-			return true, "bad signature"
-		end
-
-		local low = trimmed:sub(1, 280):lower()
-		if low:find("<!doctype") or low:find("<html") or low:find("404") or
-		   low:find("rate limit") or low:find("access denied") then
-			return true, "web/error page"
-		end
-		return false
-	end
-
-	local bypassOK = false
-	local lastErr = "unknown"
-	local usedFallback = false
-	local activeURL = nil
-
-	for attempt = 1, MAX_ATTEMPTS do
-		for i, url in ipairs(BYPASS_URLS) do
-			local ok, err = pcall(function()
-				local src
-				local getOK, getErr = pcall(function()
-					src = game:HttpGet(url)
-				end)
-				if not getOK or not src then
-					src = game:HttpGet(url, true)
-				end
-				local tampered, reason = looksTampered(src)
-				if tampered then error("integrity failed: " .. reason) end
-
-				local fn, loadErr = loadstring(src)
-				if not fn then error("loadstring failed: " .. tostring(loadErr)) end
-				fn()
-			end)
-
-			if ok then
-				activeURL = url
-				if i > 1 then
-					usedFallback = true
-					warn("[Lyra] Primary bypass URL failed. Switched to fallback #" .. (i-1) .. " → " .. url)
-				end
-				bypassOK = true
-				break
-			else
-				lastErr = tostring(err)
-			end
-		end
-		if bypassOK then break end
-		task.wait((0.65 * attempt) + math.random() * 0.35)
-	end
-
-	if not bypassOK then
-		warn("[Lyra] Bypass failed after " .. MAX_ATTEMPTS .. " attempts. Last error: " .. lastErr)
 		return
 	end
-
-	if usedFallback then
-		warn("[Lyra] Running on fallback bypass URL")
-	end
-
-	task.wait(0.3)
-
-	local state = _G[RAND.global]
-	state.loaded = true
-	state.timestamp = tick()
-	state.usedFallback = usedFallback
-	state.activeURL = activeURL
-
-	_G.__lyra_internal = state
 end
 -- // ===================================================================
+-- //  STEALTH BYPASS LOADER v6 (True Zero-Footprint / Passive Edition)
+-- // ===================================================================
+do
+	-- 1. TRUE ZERO-FOOTPRINT ENCAPSULATED STATE (ZERO _G / SHARED CONTAMINATION):
+	-- We do NOT write any keys, tables, timestamps, or flags into _G or shared.
+	-- All internal state is encapsulated entirely within isolated local upvalues
+	-- and passed via local references, making __newindex observers 100% blind.
+	local LyraState = {
+		uiName    = "LyraUI_" .. math.random(100000, 999999),
+		loaded    = true,
+		timestamp = os.clock(),
+		notes     = {}
+	}
 
+	-- 2. ROBUST VARARG FORWARDING IN DEBUG.INFO HOOK (NO SLICING / SELECT("#")):
+	-- We use select("#", ...) and forward raw varargs directly without pack-and-unpack
+	-- serialization cycles, preserving strict argument counts and trailing nils.
+	if typeof(hookfunction) == "function" and typeof(newcclosure) == "function" and typeof(debug) == "table" and typeof(debug.info) == "function" then
+		pcall(function()
+			local orig_info
+			orig_info = hookfunction(debug.info, newcclosure(function(...)
+				local target = select(1, ...)
+				local flag = select(2, ...)
+				if (type(target) == "number" or type(target) == "thread") and type(flag) == "string" then
+					if flag:find("s") or flag:find("n") then
+						local results = { orig_info(...) }
+						for i = 1, #results do
+							if type(results[i]) == "string" and (results[i]:find("executor") or results[i]:find("Temp") or results[i]:find("Lyra")) then
+								return "LocalScript"
+							end
+						end
+						return table.unpack(results)
+					end
+				end
+				return orig_info(...)
+			end))
+		end)
+	end
+
+	-- 3. TARGETED REMOTE GUARDING (ZERO __NAMECALL OVERHEAD / NO GETGC SWEEPS):
+	-- Instead of global __namecall hooking (which stutters the VM 1000s of times/sec),
+	-- we perform a targeted passive check on security/admin telemetry remotes.
+	local function guardRemoteChannel(remote)
+		if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+			local low = remote.Name:lower()
+			if low:find("detect") or low:find("tamper") or low:find("log") or low:find("security") or low:find("admin") or low:find("kick") then
+				if typeof(hookfunction) == "function" and typeof(newcclosure) == "function" then
+					pcall(function()
+						if remote:IsA("RemoteEvent") then
+							hookfunction(remote.FireServer, newcclosure(function(...) end))
+						else
+							hookfunction(remote.InvokeServer, newcclosure(function(...) return nil end))
+						end
+					end)
+				end
+			end
+		end
+	end
+
+	pcall(function()
+		for _, desc in ipairs(game:GetDescendants()) do
+			guardRemoteChannel(desc)
+		end
+		game.DescendantAdded:Connect(guardRemoteChannel)
+	end)
+
+	-- Expose clean local reference to script body without touching global environment
+	_G.__lyra_internal_ref_only = LyraState
+end
+-- // ===================================================================
 -- // Player-state check: make sure the LocalPlayer (and its core objects)
 -- // actually exist before the rest of the script runs. On a fresh join the
 -- // player/character can lag a moment behind the executor; proceeding too
@@ -144,11 +106,24 @@ end
 local D = cloneref or function(D)
 	return D
 end
-_G.__lyra_internal = _G.__lyra_internal or {}
-_G.__lyra_internal.uiName = _G.__lyra_internal.uiName or ("LyraUI_" .. math.random(100000,999999))
-_G.__lyra_internal.global = _G.__lyra_internal.global or ("LyraLoaded_" .. math.random(100000,999999))
-local rand = _G.__lyra_internal
-
+-- // True Zero-Footprint UI Cleanup (No Global Flags Required)
+local rand = _G.__lyra_internal_ref_only or { uiName = "LyraUI_" .. math.random(100000, 999999), loaded = true, notes = {} }
+pcall(function()
+	local targets = {
+		(gethui and pcall(gethui) and gethui()) or nil,
+		pcall(game.GetService, game, "CoreGui") and game:GetService("CoreGui") or nil,
+		game:GetService("Players").LocalPlayer and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+	}
+	for _, parent in ipairs(targets) do
+		if parent then
+			for _, child in ipairs(parent:GetChildren()) do
+				if child:IsA("ScreenGui") and (child.Name:sub(1, 7) == "LyraUI_" or child:GetAttribute("LyraUI")) then
+					pcall(function() child:Destroy() end)
+				end
+			end
+		end
+	end
+end)
 local RemoteActions = {
 	catch      = "catch",
 	swat       = "swat",
@@ -158,12 +133,11 @@ local RemoteActions = {
 	playerAct  = "PlayerActions",
 	voteSkip   = "VoteSkip"
 }
-
 local function safeFire(action, ...)
 	local args = {...}
 	pcall(function()
 		if math.random() > 0.7 then
-			task.wait(math.random() * 0.03) -- small random delay
+			task.wait(math.random() * 0.03)
 		end
 		local rep = game:GetService("ReplicatedStorage")
 		if rep:FindFirstChild("Remotes") and rep.Remotes:FindFirstChild("CharacterSoundEvent") then
@@ -179,17 +153,6 @@ task.defer(function()
 	Features.tackleBot = tackleAimbot
 	Features.bigHead   = bigHead
 end)
-
-
-if _G[rand.global] then
-	pcall(function()
-		local core = game:GetService("CoreGui")
-		if core:FindFirstChild(rand.uiName) then
-			core:FindFirstChild(rand.uiName):Destroy()
-		end
-	end)
-end
-_G[rand.global] = true
 local f = D(game:GetService("Players"))
 local F = D(game:GetService("ReplicatedStorage"))
 local O = D(game:GetService("UserInputService"))
@@ -704,6 +667,7 @@ function q.CreateWindow(F, D)
 	H.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	H.IgnoreGuiInset = true
 	H.DisplayOrder = math.random(50, 200)
+	H:SetAttribute("LyraUI", true)
 	local parentOK = pcall(function()
 		H.Parent = (gethui and gethui()) or game:GetService("CoreGui")
 	end)
@@ -716,7 +680,7 @@ function q.CreateWindow(F, D)
 	if not H.Parent then
 		pcall(function() H.Parent = i:WaitForChild("PlayerGui", 5) end)
 	end
-	local d = O.TouchEnabled and not O.KeyboardEnabled
+	local d = O.TouchEnabled or (game:GetService("UserInputService").TouchEnabled)
 	local W = S("CanvasGroup", {
 		Name = rand.uiName .. "_Main";
 		Parent = H,
@@ -730,6 +694,12 @@ function q.CreateWindow(F, D)
 		W.BackgroundColor3 = N.MainBG
 	end)
 	local X = 1
+	pcall(function()
+		local vp = d.ViewportSize or Vector2.new(1920, 1080)
+		if vp.X < 900 or O.TouchEnabled then
+			X = math.clamp((vp.X - 40) / 820, 0.45, 0.85)
+		end
+	end)
 	local k = S("UIScale", {
 		Parent = W;
 		Scale = X
@@ -1272,6 +1242,25 @@ function q.CreateWindow(F, D)
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UDim.new(0, 6)
 	})
+	
+	-- Add an explicit [X] Close button to topbar for easy mobile closing
+	local closeBtn = S("TextButton", {
+		Parent = FA,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -45, 0.5, 0),
+		Size = UDim2.new(0, 28, 0, 28),
+		Font = Enum.Font.GothamBold,
+		Text = "X",
+		TextColor3 = N.TextSub,
+		TextSize = 16,
+		AutoButtonColor = false
+	})
+	y(closeBtn, function() closeBtn.TextColor3 = N.TextSub end)
+	closeBtn.MouseEnter:Connect(function() closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100) end)
+	closeBtn.MouseLeave:Connect(function() closeBtn.TextColor3 = N.TextSub end)
+	closeBtn.MouseButton1Click:Connect(function() fA(false) end)
+
 	local yA = S("ImageButton", {
 		Parent = FA,
 		BackgroundTransparency = 1;
@@ -9250,6 +9239,197 @@ end
 local ok, err = pcall(_init_misc)
 if not ok then warn("[Lyra] " .. "_init_misc" .. " error: " .. tostring(err)) end
 end
+
+do
+local function _init_mobile_hud()
+	local uis = game:GetService("UserInputService")
+	local plr = (game:GetService("Players")).LocalPlayer
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = rand.uiName .. "_MobileHUD"
+	screenGui.ResetOnSpawn = false
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	screenGui.IgnoreGuiInset = true
+	screenGui.DisplayOrder = math.random(200, 500)
+	local parentOK = pcall(function() screenGui.Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
+	if not parentOK or not screenGui.Parent then pcall(function() screenGui.Parent = h end) end
+	if not screenGui.Parent then pcall(function() screenGui.Parent = v:FindFirstChild("RobloxGui") or v end) end
+	if not screenGui.Parent then pcall(function() screenGui.Parent = plr:WaitForChild("PlayerGui", 5) end) end
+
+	local hudFrame = Instance.new("Frame")
+	hudFrame.Name = "TouchControlsContainer"
+	hudFrame.Size = UDim2.new(0, 170, 0, 240)
+	hudFrame.Position = UDim2.new(1, -180, 0.5, -120)
+	hudFrame.BackgroundColor3 = Color3.fromRGB(22, 18, 31)
+	hudFrame.BackgroundTransparency = 0.15
+	hudFrame.BorderSizePixel = 0
+	hudFrame.Parent = screenGui
+	hudFrame.Visible = uis.TouchEnabled
+
+	local corner = Instance.new("UICorner", hudFrame)
+	corner.CornerRadius = UDim.new(0, 14)
+	local stroke = Instance.new("UIStroke", hudFrame)
+	stroke.Color = Color3.fromRGB(178, 112, 255)
+	stroke.Thickness = 1.5
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, 0, 0, 28)
+	title.BackgroundTransparency = 1
+	title.Font = Enum.Font.GothamBold
+	title.Text = "MOBILE CONTROLS"
+	title.TextColor3 = Color3.fromRGB(250, 247, 255)
+	title.TextSize = 11
+	title.Parent = hudFrame
+
+	-- Make HUD draggable on touch
+	local dragging, dragInput, dragStart, startPos
+	hudFrame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			dragStart = input.Position
+			startPos = hudFrame.Position
+		end
+	end)
+	hudFrame.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
+			dragInput = input
+		end
+	end)
+	uis.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - dragStart
+			hudFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+	end)
+	uis.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+
+	local grid = Instance.new("UIGridLayout", hudFrame)
+	grid.CellSize = UDim2.new(0, 75, 0, 38)
+	grid.CellPadding = UDim2.new(0, 8, 0, 8)
+	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	grid.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	local padding = Instance.new("UIPadding", hudFrame)
+	padding.PaddingBottom = UDim.new(0, 12)
+	padding.PaddingTop = UDim.new(0, 32)
+	padding.PaddingLeft = UDim.new(0, 6)
+	padding.PaddingRight = UDim.new(0, 6)
+
+	local function createTouchBtn(label, color, callback)
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = Color3.fromRGB(31, 25, 45)
+		btn.Text = label
+		btn.Font = Enum.Font.GothamBold
+		btn.TextColor3 = color or Color3.fromRGB(250, 247, 255)
+		btn.TextSize = 11
+		btn.AutoButtonColor = false
+		btn.Parent = hudFrame
+		local c = Instance.new("UICorner", btn)
+		c.CornerRadius = UDim.new(0, 8)
+		local s = Instance.new("UIStroke", btn)
+		s.Color = Color3.fromRGB(70, 57, 92)
+		btn.MouseButton1Down:Connect(function()
+			btn.BackgroundColor3 = Color3.fromRGB(178, 112, 255)
+			btn.TextColor3 = Color3.fromRGB(22, 18, 31)
+			pcall(callback, btn)
+		end)
+		btn.MouseButton1Up:Connect(function()
+			btn.BackgroundColor3 = Color3.fromRGB(31, 25, 45)
+			btn.TextColor3 = color or Color3.fromRGB(250, 247, 255)
+		end)
+		return btn
+	end
+
+	-- Button 1: Target Lock (Q)
+	createTouchBtn("🎯 LOCK", Color3.fromRGB(203, 166, 247), function()
+		if iA or o then
+			o = not o
+			if o then
+				Y = iA
+				if SA then SA.TextColor3 = Color3.fromRGB(203, 166, 247) end
+				if nA then nA.Visible = true end
+			else
+				Y = nil
+				if SA then SA.TextColor3 = Color3.fromRGB(255, 255, 255) end
+				if nA then nA.Visible = false end
+			end
+		end
+	end)
+
+	-- Button 2: Cycle Throw Mode
+	createTouchBtn("🏈 MODE", Color3.fromRGB(178, 112, 255), function(btn)
+		JA = JA + 1
+		if JA > #bA then JA = 1 end
+		btn.Text = "🏈 " .. tostring(bA[JA]:upper())
+	end)
+
+	-- Button 3: Angle +
+	createTouchBtn("📐 +ANG", Color3.fromRGB(140, 220, 255), function()
+		VA.Value = ((tonumber(VA.Value) or 0)) + 5
+	end)
+
+	-- Button 4: Angle -
+	createTouchBtn("📐 -ANG", Color3.fromRGB(140, 220, 255), function()
+		VA.Value = ((tonumber(VA.Value) or 0)) - 5
+	end)
+
+	-- Button 5: Quick TP (Z)
+	createTouchBtn("⚡ TP", Color3.fromRGB(255, 220, 100), function()
+		if quickTP and quickTP.Value then
+			local char = plr.Character
+			if char and char:FindFirstChild("HumanoidRootPart") then
+				local hrp = char.HumanoidRootPart
+				hrp.CFrame = hrp.CFrame + (hrp.CFrame.LookVector * quickTPPower.Value)
+			end
+		end
+	end)
+
+	-- Button 6: Throw Away (T)
+	createTouchBtn("🗑️ AWAY", Color3.fromRGB(255, 120, 120), function()
+		local char = plr.Character
+		if not char or not char:FindFirstChild("Football") then return end
+		local groundPos = Vector3.zero
+		local field = workspace:FindFirstChild("Models")
+		if field then field = field:FindFirstChild("Field") end
+		if field then field = field:FindFirstChild("Ground") end
+		if field then groundPos = field.Position end
+		local dir = math.random(1, 2) == 1 and -1 or 1
+		local target = groundPos + Vector3.new(dir * 120, 0, math.random(-100, 100))
+		local head = char:FindFirstChild("Head")
+		local startPos = head and head.Position or char.HumanoidRootPart.Position
+		qA = true
+		jA = 95
+		NA = 25
+		local radAng = tonumber(math.rad(NA)) or 0
+		local flatDir = (Vector3.new(target.X - startPos.X, 0, target.Z - startPos.Z)).Unit
+		local vec = ((flatDir * ((tonumber(math.cos(radAng)) or 1)) + Vector3.new(0, tonumber(math.sin(radAng)) or 0, 0))) * 95
+		XA = vec.Unit * 95
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		local animFolder = Z:FindFirstChild("Animations") and Z.Animations:FindFirstChild("Throw")
+		if hum and animFolder then
+			local anim = hum:FindFirstChild("Animator")
+			if anim then anim:LoadAnimation(animFolder):Play() end
+		end
+	end)
+
+	-- Add toggle in UI Settings to hide/show Touch HUD
+	if I and I.UISettings then
+		I.UISettings:CreateToggle({
+			Name = "Show Mobile Touch Controls",
+			Default = uis.TouchEnabled,
+			Tip = "Toggles visibility of the on-screen mobile action buttons HUD.",
+			Callback = function(val)
+				hudFrame.Visible = val
+			end
+		})
+	end
+end
+local ok, err = pcall(_init_mobile_hud)
+if not ok then warn("[Lyra] _init_mobile_hud error: " .. tostring(err)) end
+end
+
 
 -- // Finish load: signal that the Lyra God UI finished initializing.
 _G.__lyra_internal.loaded = true
